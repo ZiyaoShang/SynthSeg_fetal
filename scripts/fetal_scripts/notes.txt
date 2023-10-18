@@ -1,0 +1,41 @@
+Solved:
+> Inference output does not match the input MRIs (solved: caused by 0.5 mm resolution, set resample==True or disable target_resolution)
+
+> Label index does not match freesurfer convention used in SynthSeg (solved: edited available label list in lab2im.utils.get_list_labels.py)
+
+Unsolved:
+> register for semester project (need project proposal)
+> permission for Science cluster.
+
+> The image is not centered and the overall dimensions are too large (to much blank space), which causes the random croping (160) during augmentation to tend to miss part of the brain. (TODO: brain centering and cropping bg labels, or increase segmentation/generation )
+
+> If we edit the resolution to 1 and center the brain, setting the aff to identity would lead to incorrect transformations. 
+
+
+dependencies setup:
+links:
+https://saturncloud.io/blog/what-is-the-best-keras-version-to-use-with-tensorflowgpu-14/#:~:text=Keras%20Versions%20and%20Tensorflow%20Compatibility&text=As%20you%20can%20see%20from,with%20Tensorflow%202.5%20and%202.6.
+
+https://www.tensorflow.org/install/source#gpu
+
+https://stackoverflow.com/questions/62690377/tensorflow-compatibility-with-keras
+
+Steps:
+> conda create --name synthseg python=3.8
+> pip install -r requirements_python3.8.txt
+> conda install -c conda-forge cudnn=7.6.5
+> conda install cudatoolkit=10.1.168
+
+4126721
+4163566
+
+Synthseg:
+
+The nifti affine transformation:
+The affine matrix in the NIfTI (Neuroimaging Informatics Technology Initiative) file header is a 4x4 matrix that defines the transformation from voxel indices to the world coordinates. It provides a mapping between the spatial coordinates in the image (in millimeters) and the voxel grid.
+
+The affine matrix is used to convert the coordinates of a voxel in the image to the corresponding physical position in the scanner or physical space. This transformation is necessary because the voxel grid in the image may not directly correspond to the physical dimensions of the scanned object.
+
+The affine matrix allows you to perform various spatial transformations, including rotations, translations, and scaling. By using the affine matrix, you can map points between the voxel space and the physical space, enabling various operations such as resampling, registration, and spatial normalization.
+
+The first three rows represent the rotation, scaling, and shearing parameters, and the last column represents the translation parameters. The elements in this matrix define how the voxel coordinates in the image relate to the physical space coordinates.
