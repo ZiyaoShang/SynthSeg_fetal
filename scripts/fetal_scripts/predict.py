@@ -26,7 +26,7 @@ from SynthSeg.predict import predict
 import numpy as np
 import os
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 # paths to input/output files
 # Here we assume the availability of an image that we wish to segment with a model we have just trained.
 # We emphasise that we do not provide such an image (this is just an example after all :))
@@ -35,16 +35,16 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 # be segmented. In this case, please provide path_segm (and possibly path_posteriors, and path_resampled) as folder.
 path_images = '/home/zshang/SP/data/ZURICH/mri'
 # path to the output segmentation
-path_segm = '/home/zshang/SP/data/ZURICH/experiments/vanilla_seg'
+path_segm = '/home/zshang/SP/data/ZURICH/experiments/epoch2'
 # we can also provide paths for optional files containing the probability map for all predicted labels
 path_posteriors = None
 # and for a csv file that will contain the volumes of each segmented structure
 path_vol = None
 
 # of course we need to provide the path to the trained model (here we use the main synthseg model).
-path_model = "/home/zshang/SP/SynthSeg/models/synthseg_1.0.h5"
+path_model = "/home/zshang/SP/data/ZURICH/experiments/model/dice_002.h5"
 # but we also need to provide the path to the segmentation labels used during training
-path_segmentation_labels = './data/labels_classes_priors/synthseg_segmentation_labels.npy'
+path_segmentation_labels = np.array([0,1,2,3,4,5,6,7])
 
 # optionally we can give a numpy array with the names corresponding to the structures in path_segmentation_labels
 path_segmentation_names = None
@@ -66,8 +66,8 @@ path_resampled = None
 # First, we can apply some test-time augmentation by flipping the input along the right-left axis and segmenting
 # the resulting image. In this case, and if the network has right/left specific labels, it is also very important to
 # provide the number of neutral labels. This must be the exact same as the one used during training.
-flip = True
-n_neutral_labels = 18
+flip = False
+n_neutral_labels = 8
 # Second, we can smooth the probability maps produced by the network. This doesn't change much the results, but helps to
 # reduce high frequency noise in the obtained segmentations.
 sigma_smoothing = 0.5
@@ -84,7 +84,7 @@ sigma_smoothing = 0.5
 topology_classes = None
 # Finally, we can also operate a strict version of biggest connected component, to get rid of unwanted noisy label
 # patch that can sometimes occur in the background. If so, we do recommend to use the smoothing option described above.
-keep_biggest_component = False
+keep_biggest_component = True
 
 # Regarding the architecture of the network, we must provide the predict function with the same parameters as during
 # training.

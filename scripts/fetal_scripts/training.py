@@ -22,6 +22,7 @@ License.
 
 import os
 import sys
+import numpy as np
 
 # project imports
 from SynthSeg.training import training
@@ -46,17 +47,17 @@ feat_multiplier = 2    # if feat_multiplier is set to 1, we will keep the number
 # training parameters
 lr = 1e-4               # learning rate
 wl2_epochs = 1          # number of pre-training epochs with wl2 metric w.r.t. the layer before the softmax
-dice_epochs = 100       # number of training epochs
-steps_per_epoch = 5000  # number of iteration per epoch
+dice_epochs = 9        # number of training epochs
+steps_per_epoch = 2000  # number of iteration per epoch
 
 
 # ---------- Generation parameters ----------
 # these parameters are from the previous tutorial, and thus we do not explain them again here
 
 # generation and segmentation labels
-path_generation_labels = [0,1,2,3,4,5,6,7]
+path_generation_labels = np.array([0,1,2,3,4,5,6,7])
 n_neutral_labels = 8
-path_segmentation_labels = [0,1,2,3,4,5,6,7]
+path_segmentation_labels = np.array([0,1,2,3,4,5,6,7])
 
 # shape and resolution of the outputs
 target_res = None
@@ -68,7 +69,7 @@ prior_distributions = 'uniform'
 path_generation_classes = None
 
 # spatial deformation parameters
-flipping = True
+flipping = False
 scaling_bounds = .2
 rotation_bounds = 15
 shearing_bounds = .012

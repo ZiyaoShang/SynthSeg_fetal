@@ -26,8 +26,7 @@ Steps:
 > conda install -c conda-forge cudnn=7.6.5
 > conda install cudatoolkit=10.1.168
 
-4126721
-4163566
+175449
 
 Synthseg:
 

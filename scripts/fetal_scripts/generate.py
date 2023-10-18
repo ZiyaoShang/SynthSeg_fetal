@@ -28,7 +28,7 @@ from ext.lab2im import utils
 from SynthSeg.brain_generator import BrainGenerator
 import numpy as np
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 # script parameters
 n_examples = 10  # number of examples to generate in this script
 result_dir = '/home/zshang/SP/data/ZURICH/experiments/generator_examples'  # folder where examples will be saved
@@ -80,7 +80,7 @@ n_neutral_labels = 8
 # Note that in this example the labels 24 (CSF), and 507 (extra-cerebral soft tissues) are not predicted, or said
 # differently they are segmented as background.
 # Also, the left and right lesions (labels 25 and 57) are segmented as left and right white matter (labels 2 and 41).
-output_labels = np.array([0,1,2,3,4,5,6,7])
+output_labels = [0,1,2,3,4,5,6,7]
 
 
 # ---------- Shape and resolution of the outputs ----------

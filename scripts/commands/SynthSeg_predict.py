@@ -70,6 +70,8 @@ print('\n' + version + '\n')
 if args['cpu']:
     print('using CPU, hiding all CUDA_VISIBLE_DEVICES')
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+else:
+    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 # limit the number of threads to be used if running on CPU
 import tensorflow as tf
