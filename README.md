@@ -1,3 +1,5 @@
+This is cloned from the original Synthseg framework [https://github.com/BBillot/SynthSeg] for my semester project on fetal brain segmentation.
+
 # SynthSeg
 
 
