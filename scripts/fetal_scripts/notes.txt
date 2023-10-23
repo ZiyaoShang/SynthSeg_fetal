@@ -1,15 +1,19 @@
 Solved:
 > Inference output does not match the input MRIs (solved: caused by 0.5 mm resolution, set resample==True or disable target_resolution)
-
 > Label index does not match freesurfer convention used in SynthSeg (solved: edited available label list in lab2im.utils.get_list_labels.py)
+> permission for Science cluster.
+> register for semester project (need project proposal)
+> The image is not centered and the overall dimensions are too large (to much blank space), which causes the random croping (160) during augmentation to tend to miss part of the brain. (TODO: brain centering and cropping bg labels, or increase segmentation/generation ) (no longer needed, image size have high variances and the inputs to synthseg must be the same)
+> If we edit the resolution to 1 and center the brain, setting the aff to identity would lead to incorrect transformations. (no longer needed, image size have high variances and the inputs to synthseg must be the same. Thus, random-cropping is also disabled)
 
 Unsolved:
-> register for semester project (need project proposal)
-> permission for Science cluster.
+> setup for Leomed cluster.
+> automatic shutdown of all process 2-3 h after logging off Science.
+> skull scripping (issue--ZURICH are not skull-scripped while CHUV are): 1, mask all unlabelled voxels with intensity>0 as a new label. 2, generate these labels for 50% of the images but never segment them. Alternative: use the bayasian stuff cited by synthseg (probably not needed). 
 
-> The image is not centered and the overall dimensions are too large (to much blank space), which causes the random croping (160) during augmentation to tend to miss part of the brain. (TODO: brain centering and cropping bg labels, or increase segmentation/generation )
+Note: the current full_zurich trained model uses output==160, which has been corrected to None for half_processed.
 
-> If we edit the resolution to 1 and center the brain, setting the aff to identity would lead to incorrect transformations. 
+
 
 
 dependencies setup:
@@ -20,13 +24,27 @@ https://www.tensorflow.org/install/source#gpu
 
 https://stackoverflow.com/questions/62690377/tensorflow-compatibility-with-keras
 
-Steps:
+installation Steps:
 > conda create --name synthseg python=3.8
 > pip install -r requirements_python3.8.txt
 > conda install -c conda-forge cudnn=7.6.5
 > conda install cudatoolkit=10.1.168
 
-175449
+tmux:
+> tmux new -s synthseg
+> tmux detach
+> tmux attach -t synthseg
+
+scripts: 
+> python -u -m scripts.fetal_scripts.training > logs.txt 2>&1 &
+> (sleep 7h && kill 1495470) &
+
+> strace -o log.txt -f -e trace=process,signal -p 861190 &
+
+resource tracking:
+> python -u -m scripts.fetal_scripts.cpu_monitor > cpu_log.txt 2>&1 &
+> nohup watch -n 1 "nvidia-smi | awk 'NR==14' >> gpu_log.txt" >/dev/null 2>&1 &
+
 
 Synthseg:
 

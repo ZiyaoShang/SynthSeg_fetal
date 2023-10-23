@@ -30,8 +30,8 @@ from SynthSeg.training import training
 os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 # path training label maps
-path_training_label_maps = '/home/zshang/SP/data/ZURICH/seg'
-path_model_dir = '/home/zshang/SP/data/ZURICH/experiments/model'
+path_training_label_maps = '/home/zshang/SP/data/ZURICH/half_extra_label_centered_seg'
+path_model_dir = '/home/zshang/SP/data/ZURICH/experiments/model/half_extra_label_centered_training'
 batchsize = 1
 
 # architecture parameters
@@ -47,21 +47,21 @@ feat_multiplier = 2    # if feat_multiplier is set to 1, we will keep the number
 # training parameters
 lr = 1e-4               # learning rate
 wl2_epochs = 1          # number of pre-training epochs with wl2 metric w.r.t. the layer before the softmax
-dice_epochs = 9        # number of training epochs
-steps_per_epoch = 2000  # number of iteration per epoch
-
+dice_epochs = 50        # number of training epochs
+steps_per_epoch = 3000  # number of iteration per epoch
+checkpoint = None 
 
 # ---------- Generation parameters ----------
 # these parameters are from the previous tutorial, and thus we do not explain them again here
 
 # generation and segmentation labels
-path_generation_labels = np.array([0,1,2,3,4,5,6,7])
+path_generation_labels = np.array([0,10,1,2,3,4,5,6,7])
 n_neutral_labels = 8
-path_segmentation_labels = np.array([0,1,2,3,4,5,6,7])
+path_segmentation_labels = np.array([0,0,1,2,3,4,5,6,7])
 
 # shape and resolution of the outputs
 target_res = None
-output_shape = 160
+output_shape = 180
 n_channels = 1
 
 # GMM sampling
@@ -110,4 +110,5 @@ training(path_training_label_maps,
          lr=lr,
          wl2_epochs=wl2_epochs,
          dice_epochs=dice_epochs,
-         steps_per_epoch=steps_per_epoch)
+         steps_per_epoch=steps_per_epoch,
+         checkpoint=checkpoint)

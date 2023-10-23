@@ -37,7 +37,7 @@ result_dir = '/home/zshang/SP/data/ZURICH/experiments/generator_examples'  # fol
 # ---------- Input label maps and associated values ----------
 
 # folder containing label maps to generate images from (note that they must have a ".nii", ".nii.gz" or ".mgz" format)
-path_label_map = '/home/zshang/SP/data/ZURICH/seg'
+path_label_map = '/home/zshang/SP/data/ZURICH/half_extra_label_centered_seg'
 
 # Here we specify the structures in the label maps for which we want to generate intensities.
 # This is given as a list of label values, which do not necessarily need to be present in every label map.
@@ -62,13 +62,13 @@ path_label_map = '/home/zshang/SP/data/ZURICH/seg'
 #                               53,   # right hippocampus
 #                               57]   # right lesions
 # Note that plenty of structures are not represented here..... but it's just an example ! :)
-generation_labels = np.array([0,1,2,3,4,5,6,7])
+generation_labels = np.array([0,10,1,2,3,4,5,6,7])
 
 
 # We also have to specify the number of non-sided labels in order to differentiate them from the labels with
 # right/left values.
 # Example: (continuing the previous one): in this example it would be 3 (background, CSF, extra-cerebral soft tissues).
-n_neutral_labels = 8
+n_neutral_labels = 9
 
 # By default, the output label maps (i.e. the target segmentations) contain all the labels used for generation.
 # However, we may want not to predict all the generation labels (e.g. extra-cerebral soft tissues).
@@ -80,7 +80,7 @@ n_neutral_labels = 8
 # Note that in this example the labels 24 (CSF), and 507 (extra-cerebral soft tissues) are not predicted, or said
 # differently they are segmented as background.
 # Also, the left and right lesions (labels 25 and 57) are segmented as left and right white matter (labels 2 and 41).
-output_labels = [0,1,2,3,4,5,6,7]
+output_labels = [0,0,1,2,3,4,5,6,7]
 
 
 # ---------- Shape and resolution of the outputs ----------
@@ -95,7 +95,7 @@ target_res = None
 
 # The generative model offers the possibility to randomly crop the training examples to a given size.
 # Here we crop them to 160^3, such that the produced images fit on the GPU during training.
-output_shape = None
+output_shape = 180
 
 
 # ---------- GMM sampling parameters ----------

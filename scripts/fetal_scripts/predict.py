@@ -35,14 +35,14 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 # be segmented. In this case, please provide path_segm (and possibly path_posteriors, and path_resampled) as folder.
 path_images = '/home/zshang/SP/data/ZURICH/mri'
 # path to the output segmentation
-path_segm = '/home/zshang/SP/data/ZURICH/experiments/epoch2'
+path_segm = '/home/zshang/SP/data/ZURICH/experiments/full_zuriche17'
 # we can also provide paths for optional files containing the probability map for all predicted labels
 path_posteriors = None
 # and for a csv file that will contain the volumes of each segmented structure
 path_vol = None
 
 # of course we need to provide the path to the trained model (here we use the main synthseg model).
-path_model = "/home/zshang/SP/data/ZURICH/experiments/model/dice_002.h5"
+path_model = "/home/zshang/SP/data/ZURICH/experiments/model/full_zurich/dice_017.h5"
 # but we also need to provide the path to the segmentation labels used during training
 path_segmentation_labels = np.array([0,1,2,3,4,5,6,7])
 
@@ -101,7 +101,7 @@ feat_multiplier = 2
 # single image or to a folder). If provided as a folder, ground truths must be sorted in the same order as images in
 # path_images.
 # Just set this to None if you do not want to run evaluation.
-gt_folder = None
+gt_folder = "/home/zshang/SP/data/ZURICH/seg"
 # Dice scores will be computed and saved as a numpy array in the folder containing the segmentation(s).
 # This numpy array will be organised as follows: rows correspond to structures, and columns to subjects. Importantly,
 # rows are given in a sorted order.
