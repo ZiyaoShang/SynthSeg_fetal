@@ -329,21 +329,23 @@ def train_model(model,
     compile_model = True
     init_epoch = 0
     if path_checkpoint is not None:
+        print("need to load checkpoint")
         if metric_type in path_checkpoint:
             init_epoch = int(os.path.basename(path_checkpoint).split(metric_type)[1][1:-3])
         if (not reinitialise_momentum) & (metric_type in path_checkpoint):
             custom_l2i = {key: value for (key, value) in getmembers(layers, isclass) if key != 'Layer'}
             custom_nrn = {key: value for (key, value) in getmembers(nrn_layers, isclass) if key != 'Layer'}
             custom_objects = {**custom_l2i, **custom_nrn, 'tf': tf, 'keras': keras, 'loss': metrics.IdentityLoss().loss}
+            print("loading checkpoint")
             model = models.load_model(path_checkpoint, custom_objects=custom_objects)
             compile_model = False
         else:
             model.load_weights(path_checkpoint, by_name=True)
-
+    print("weights loaded")
     # compile
     if compile_model:
         model.compile(optimizer=Adam(lr=learning_rate), loss=metrics.IdentityLoss().loss)
-
+        print("model compiled")
     # fit
     model.fit_generator(generator,
                         epochs=n_epochs,

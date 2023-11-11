@@ -2049,3 +2049,68 @@ class RandomDilationErosion(Layer):
 
     def compute_output_shape(self, input_shape):
         return input_shape
+
+
+class InflateLabels(Layer):
+    """
+    """
+
+    def __init__(self, labels_to_inflate=[1,2,3,4,5,6,7], inflate_val=[1,1,1,2,3,4], **kwargs):
+        self.labels_to_inflate = labels_to_inflate
+        self.inflate_val = inflate_val
+        super(InflateLabels, self).__init__(**kwargs)
+
+    def get_config(self):
+        config = super().get_config()
+        # config["source_values"] = self.source_values
+        # config["dest_values"] = self.dest_values
+        return config
+
+    def build(self, input_shape):
+        # print(input_shape)
+        self.built = True
+        super(InflateLabels, self).build(input_shape)
+
+    def call(self, inputs, **kwargs):
+        # r = tf.random.uniform(shape=[], minval=0.0, maxval=1.0)
+        # if tf.math.greater(r, 0.5):
+        #     return inputs
+        # if np.random.random() < 0.5:
+        #     return inputs
+        # randomly choose from the set of labels and filter sizes
+        label_to_inflate = tf.gather(self.labels_to_inflate, tf.random.uniform(shape=[], minval=0, maxval=len(self.labels_to_inflate), dtype='int32'))
+
+        filter_size = tf.gather(self.inflate_val, tf.random.uniform(shape=[], minval=0, maxval=len(self.inflate_val), dtype='int32'))
+
+        # mask label
+        mask = tf.cast(tf.equal(inputs, label_to_inflate), dtype='float16')
+
+        # Perform 3D convolution (mimic image dilation)
+        filter_weights = tf.cast(tf.fill((filter_size, filter_size, filter_size, 1, 1), 1.0), dtype='float16')
+        dilated = tf.nn.conv3d(mask, filter_weights, strides=[1, 1, 1, 1, 1], padding='SAME')
+
+        # get the dilated label
+        new_mask = tf.greater(dilated, 0)
+        result_tensor = tf.where(new_mask, label_to_inflate, inputs)
+
+        return tf.cast(result_tensor, inputs.dtype)
+
+    #     cur_map = inputs
+    #     for i in range(len(self.labels_to_inflate)):
+    #         cur_map = self.inflate(cur_map, self.labels_to_inflate[i], self.inflate_val[i])
+
+    #     return cur_map
+    
+    # def inflate(self, label_map, label, filter_size):
+    #     mask = tf.cast(tf.equal(label_map, label), dtype='float16')
+    #     filter_weights = tf.cast(tf.fill((filter_size, filter_size, filter_size, 1, 1), 1.0), dtype='float16')
+
+    #     # Perform 3D convolution (mimic image dilation)
+    #     dilated = tf.nn.conv3d(mask, filter_weights, strides=[1, 1, 1, 1, 1], padding='SAME')
+
+    #     # dilated = tf.identity(mask)
+
+    #     new_mask = tf.greater(dilated, 0)
+    #     result_tensor = tf.where(new_mask, label, label_map)
+
+    #     return result_tensor

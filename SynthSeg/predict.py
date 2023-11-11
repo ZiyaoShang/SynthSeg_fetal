@@ -465,6 +465,7 @@ def build_model(path_model,
                           activation=activation,
                           batch_norm=-1)
     net.load_weights(path_model, by_name=True)
+    print("weights_loaded")
 
     # smooth posteriors if specified
     if sigma_smoothing > 0:

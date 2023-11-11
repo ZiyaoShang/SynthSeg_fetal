@@ -27,8 +27,14 @@ import os
 from ext.lab2im import utils
 from SynthSeg.brain_generator import BrainGenerator
 import numpy as np
+import tensorflow as tf
+import time
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+tf.config.threading.set_inter_op_parallelism_threads(8)
+# tf.compat.v2.config.experimental_run_functions_eagerly(True)
+# tf.compat.v1.config.experimental_run_functions_eagerly(True)
+
 # script parameters
 n_examples = 10  # number of examples to generate in this script
 result_dir = '/home/zshang/SP/data/ZURICH/experiments/generator_examples'  # folder where examples will be saved
@@ -37,7 +43,7 @@ result_dir = '/home/zshang/SP/data/ZURICH/experiments/generator_examples'  # fol
 # ---------- Input label maps and associated values ----------
 
 # folder containing label maps to generate images from (note that they must have a ".nii", ".nii.gz" or ".mgz" format)
-path_label_map = '/home/zshang/SP/data/ZURICH/half_extra_label_centered_seg'
+path_label_map = '/home/zshang/SP/data/ZURICH/one_seg'
 
 # Here we specify the structures in the label maps for which we want to generate intensities.
 # This is given as a list of label values, which do not necessarily need to be present in every label map.
@@ -62,13 +68,13 @@ path_label_map = '/home/zshang/SP/data/ZURICH/half_extra_label_centered_seg'
 #                               53,   # right hippocampus
 #                               57]   # right lesions
 # Note that plenty of structures are not represented here..... but it's just an example ! :)
-generation_labels = np.array([0,10,1,2,3,4,5,6,7])
+generation_labels = np.array([0,1,2,3,4,5,6,7])
 
 
 # We also have to specify the number of non-sided labels in order to differentiate them from the labels with
 # right/left values.
 # Example: (continuing the previous one): in this example it would be 3 (background, CSF, extra-cerebral soft tissues).
-n_neutral_labels = 9
+n_neutral_labels = 8
 
 # By default, the output label maps (i.e. the target segmentations) contain all the labels used for generation.
 # However, we may want not to predict all the generation labels (e.g. extra-cerebral soft tissues).
@@ -80,7 +86,7 @@ n_neutral_labels = 9
 # Note that in this example the labels 24 (CSF), and 507 (extra-cerebral soft tissues) are not predicted, or said
 # differently they are segmented as background.
 # Also, the left and right lesions (labels 25 and 57) are segmented as left and right white matter (labels 2 and 41).
-output_labels = [0,0,1,2,3,4,5,6,7]
+output_labels = [0,1,2,3,4,5,6,7]
 
 
 # ---------- Shape and resolution of the outputs ----------
@@ -95,7 +101,7 @@ target_res = None
 
 # The generative model offers the possibility to randomly crop the training examples to a given size.
 # Here we crop them to 160^3, such that the produced images fit on the GPU during training.
-output_shape = 180
+output_shape = 160
 
 
 # ---------- GMM sampling parameters ----------
@@ -103,6 +109,8 @@ output_shape = 180
 # Here we use uniform prior distribution to sample the means/stds of the GMM. Because we don't specify prior_means and
 # prior_stds, those priors will have default bounds of [0, 250], and [0, 35]. Those values enable to generate a wide
 # range of contrasts (often unrealistic), which will make the segmentation network contrast-agnostic.
+prior_means=None
+prior_stds=None
 prior_distributions = 'uniform'
 
 # We regroup labels with similar tissue types into K "classes", so that intensities of similar regions are sampled
@@ -125,20 +133,20 @@ generation_classes = None
 # than the original segmentations.
 
 flipping = True  # enable right/left flipping
-scaling_bounds = 0.2  # the scaling coefficients will be sampled from U(1-scaling_bounds; 1+scaling_bounds)
-rotation_bounds = 15  # the rotation angles will be sampled from U(-rotation_bounds; rotation_bounds)
+scaling_bounds = [1.2, 2]  # the scaling coefficients will be sampled from U(1-scaling_bounds; 1+scaling_bounds) default: 0.2
+rotation_bounds = 25  # the rotation angles will be sampled from U(-rotation_bounds; rotation_bounds) default: 15
 shearing_bounds = 0.012  # the shearing coefficients will be sampled from U(-shearing_bounds; shearing_bounds)
 translation_bounds = False  # no translation is performed, as this is already modelled by the random cropping
 nonlin_std = 4.  # this controls the maximum elastic deformation (higher = more deformation)
-bias_field_std = 0.7  # this controls the maximum bias field corruption (higher = more bias)
+bias_field_std = 0.7  # this controls the maximum bias field corruption (higher = more bias) default:0.7
 
 
 # ---------- Resolution parameters ----------
 
 # This enables us to randomise the resolution of the produces images.
 # Although being only one parameter, this is crucial !!
-randomise_res = True
-
+randomise_res = False
+# default: true 
 
 # ------------------------------------------------------ Generate ------------------------------------------------------
 
@@ -160,7 +168,7 @@ brain_generator = BrainGenerator(labels_dir=path_label_map,
                                  nonlin_std=nonlin_std,
                                  bias_field_std=bias_field_std,
                                  randomise_res=randomise_res)
-
+start_time = time.time()
 for n in range(n_examples):
 
     print(f"generating image {n}")
@@ -172,3 +180,9 @@ for n in range(n_examples):
                       os.path.join(result_dir, 'image_%s.nii.gz' % n))
     utils.save_volume(lab, brain_generator.aff, brain_generator.header,
                       os.path.join(result_dir, 'labels_%s.nii.gz' % n))
+    
+end_time = time.time()
+
+# Calculate the elapsed time
+elapsed_time = end_time - start_time
+print(f"Elapsed time: {elapsed_time} seconds")

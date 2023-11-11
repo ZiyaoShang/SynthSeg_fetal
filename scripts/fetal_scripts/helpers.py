@@ -37,3 +37,5 @@ def preprocess_fetal():
     for file in files:
         img = nib.load(file)
         print(img.get_fdata().shape)
+
+print("nothing")

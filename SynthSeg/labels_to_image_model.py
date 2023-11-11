@@ -179,6 +179,10 @@ def labels_to_image_model(labels_shape,
         assert aff is not None, 'aff should not be None if flipping is True'
         labels = layers.RandomFlip(get_ras_axes(aff, n_dims)[0], True, generation_labels, n_neutral_labels)(labels)
 
+    # inflate random label
+    # note: this will NOT work when generation_labels!=segmentation_labels
+    labels = layers.InflateLabels(labels_to_inflate=[1,2,3,4,5,6,7], inflate_val=[1,1,1,2,3,4], name='labels_inflate')(labels)
+
     # build synthetic image
     image = layers.SampleConditionalGMM(generation_labels)([labels, means_input, stds_input])
 
