@@ -36,14 +36,15 @@ tf.config.threading.set_inter_op_parallelism_threads(8)
 # tf.compat.v1.config.experimental_run_functions_eagerly(True)
 
 # script parameters
-n_examples = 10  # number of examples to generate in this script
+n_examples = 20  # number of examples to generate in this script
 result_dir = '/home/zshang/SP/data/ZURICH/experiments/generator_examples'  # folder where examples will be saved
 
 
 # ---------- Input label maps and associated values ----------
 
 # folder containing label maps to generate images from (note that they must have a ".nii", ".nii.gz" or ".mgz" format)
-path_label_map = '/home/zshang/SP/data/ZURICH/one_seg'
+path_label_map = '/home/zshang/SP/data/ZURICH/all_extra_label_centered_seg_train'
+# path_label_map = '/home/zshang/SP/data/ZURICH/one_seg'
 
 # Here we specify the structures in the label maps for which we want to generate intensities.
 # This is given as a list of label values, which do not necessarily need to be present in every label map.
@@ -68,13 +69,13 @@ path_label_map = '/home/zshang/SP/data/ZURICH/one_seg'
 #                               53,   # right hippocampus
 #                               57]   # right lesions
 # Note that plenty of structures are not represented here..... but it's just an example ! :)
-generation_labels = np.array([0,1,2,3,4,5,6,7])
+generation_labels = np.array([0,10,1,2,3,4,5,6,7])
 
 
 # We also have to specify the number of non-sided labels in order to differentiate them from the labels with
 # right/left values.
 # Example: (continuing the previous one): in this example it would be 3 (background, CSF, extra-cerebral soft tissues).
-n_neutral_labels = 8
+n_neutral_labels = 9
 
 # By default, the output label maps (i.e. the target segmentations) contain all the labels used for generation.
 # However, we may want not to predict all the generation labels (e.g. extra-cerebral soft tissues).
@@ -86,7 +87,7 @@ n_neutral_labels = 8
 # Note that in this example the labels 24 (CSF), and 507 (extra-cerebral soft tissues) are not predicted, or said
 # differently they are segmented as background.
 # Also, the left and right lesions (labels 25 and 57) are segmented as left and right white matter (labels 2 and 41).
-output_labels = [0,1,2,3,4,5,6,7]
+output_labels = [0,0,1,2,3,4,5,6,7]
 
 
 # ---------- Shape and resolution of the outputs ----------
@@ -97,11 +98,13 @@ n_channels = 1
 # We have the possibility to generate training examples at a different resolution than the training label maps (e.g.
 # when using ultra HR training label maps). Here we want to generate at the same resolution as the training label maps,
 # so we set this to None.
-target_res = None
+target_res = 1.0
 
 # The generative model offers the possibility to randomly crop the training examples to a given size.
 # Here we crop them to 160^3, such that the produced images fit on the GPU during training.
 output_shape = 160
+
+output_div_by_n = 32
 
 
 # ---------- GMM sampling parameters ----------
@@ -132,9 +135,9 @@ generation_classes = None
 # We note that because the label maps will be resampled with nearest neighbour interpolation, they can look less smooth
 # than the original segmentations.
 
-flipping = True  # enable right/left flipping
-scaling_bounds = [1.2, 2]  # the scaling coefficients will be sampled from U(1-scaling_bounds; 1+scaling_bounds) default: 0.2
-rotation_bounds = 25  # the rotation angles will be sampled from U(-rotation_bounds; rotation_bounds) default: 15
+flipping = False  # enable right/left flipping
+scaling_bounds = 0.2  # the scaling coefficients will be sampled from U(1-scaling_bounds; 1+scaling_bounds) default: 0.2
+rotation_bounds = 20  # the rotation angles will be sampled from U(-rotation_bounds; rotation_bounds) default: 15
 shearing_bounds = 0.012  # the shearing coefficients will be sampled from U(-shearing_bounds; shearing_bounds)
 translation_bounds = False  # no translation is performed, as this is already modelled by the random cropping
 nonlin_std = 4.  # this controls the maximum elastic deformation (higher = more deformation)
@@ -148,6 +151,7 @@ bias_field_std = 0.7  # this controls the maximum bias field corruption (higher 
 randomise_res = False
 # default: true 
 
+inflate = False
 # ------------------------------------------------------ Generate ------------------------------------------------------
 
 # instantiate BrainGenerator object
@@ -160,6 +164,7 @@ brain_generator = BrainGenerator(labels_dir=path_label_map,
                                  n_channels=n_channels,
                                  target_res=target_res,
                                  output_shape=output_shape,
+                                 output_div_by_n=output_div_by_n,
                                  flipping=flipping,
                                  scaling_bounds=scaling_bounds,
                                  rotation_bounds=rotation_bounds,
@@ -167,7 +172,8 @@ brain_generator = BrainGenerator(labels_dir=path_label_map,
                                  translation_bounds=translation_bounds,
                                  nonlin_std=nonlin_std,
                                  bias_field_std=bias_field_std,
-                                 randomise_res=randomise_res)
+                                 randomise_res=randomise_res,
+                                 inflate=inflate)
 start_time = time.time()
 for n in range(n_examples):
 

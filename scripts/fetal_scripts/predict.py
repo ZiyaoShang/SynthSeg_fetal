@@ -27,7 +27,7 @@ from SynthSeg.predict import predict
 import numpy as np
 import os
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 tf.config.threading.set_inter_op_parallelism_threads(8)
 tf.config.threading.set_intra_op_parallelism_threads(8)
 
@@ -40,16 +40,17 @@ print(f"Inter-op parallelism threads: {inter_op_threads}")
 # Input images must have a .nii, .nii.gz, or .mgz extension.
 # Note that path_images can also be the path to an entire folder, in which case all the images within this folder will
 # be segmented. In this case, please provide path_segm (and possibly path_posteriors, and path_resampled) as folder.
-path_images = '/home/zshang/SP/data/CHUV/no_extra_cereb_not_centered_mri'
+# path_images = '/home/zshang/SP/data/ZURICH/no_extra_cereb_not_centered_mri_eval'
+path_images = '/home/zshang/SP/data/grand_train_all/SP_exp/processed_test/sheep/img'
 # path to the output segmentation
-path_segm = '/home/zshang/SP/data/CHUV/experiments/results/inflate_scale_rot_160_ex2'
+path_segm = '/home/zshang/SP/data/grand_train_all/SP_exp/processed_test/sheep/raw_seg'
 # we can also provide paths for optional files containing the probability map for all predicted labels
 path_posteriors = None
 # and for a csv file that will contain the volumes of each segmented structure
 path_vol = None
 
 # of course we need to provide the path to the trained model (here we use the main synthseg model).
-path_model = "/home/zshang/SP/data/ZURICH/experiments/model/inflate_scale_rot_160_ex2/dice_014.h5"
+path_model = '/home/zshang/SP/data/grand_train_all/SP_exp/model/dice_008.h5'
 # but we also need to provide the path to the segmentation labels used during training
 path_segmentation_labels = np.array([0,1,2,3,4,5,6,7])
 
@@ -65,10 +66,10 @@ cropping = None
 # Finally, we finish preprocessing the input by resampling it to the resolution at which the network has been trained to
 # produce predictions. If the input image has a resolution outside the range [target_res-0.05, target_res+0.05], it will
 # automatically be resampled to target_res.
-target_res = None
+target_res = 1.0
 # Note that if the image is indeed resampled, you have the option to save the resampled image.
+# path_resampled = "/home/zshang/SP/data/ZURICH/experiments/model/delete/temp"
 path_resampled = None
-
 # After the image has been processed by the network, there are again various options to postprocess it.
 # First, we can apply some test-time augmentation by flipping the input along the right-left axis and segmenting
 # the resulting image. In this case, and if the network has right/left specific labels, it is also very important to
@@ -108,7 +109,8 @@ feat_multiplier = 2
 # single image or to a folder). If provided as a folder, ground truths must be sorted in the same order as images in
 # path_images.
 # Just set this to None if you do not want to run evaluation.
-gt_folder = "/home/zshang/SP/data/CHUV/original_data/seg"
+gt_folder = None
+# gt_folder = "/home/zshang/SP/data/CHUV/experiments/del/gt"
 # Dice scores will be computed and saved as a numpy array in the folder containing the segmentation(s).
 # This numpy array will be organised as follows: rows correspond to structures, and columns to subjects. Importantly,
 # rows are given in a sorted order.
@@ -128,7 +130,7 @@ gt_folder = "/home/zshang/SP/data/CHUV/original_data/seg"
 #
 # Also we can compute different surface distances (Hausdorff, Hausdorff99, Hausdorff95 and mean surface distance). The
 # results will be saved in arrays similar to the Dice scores.
-compute_distances = True
+compute_distances = False
 
 # All right, we're ready to make predictions !!
 predict(path_images,

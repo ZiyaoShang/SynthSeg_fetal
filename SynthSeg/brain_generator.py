@@ -58,7 +58,8 @@ class BrainGenerator:
                  thickness=None,
                  bias_field_std=.7,
                  bias_scale=.025,
-                 return_gradients=False):
+                 return_gradients=False,
+                 inflate=True): # zs
         """
         This class is wrapper around the labels_to_image_model model. It contains the GPU model that generates images
         from labels maps, and a python generator that supplies the input data for this model.
@@ -224,6 +225,7 @@ class BrainGenerator:
         self.flipping = flipping
         self.output_shape = utils.load_array_if_path(output_shape)
         self.output_div_by_n = output_div_by_n
+        self.inflate = inflate # zs
         # GMM parameters
         self.prior_distributions = prior_distributions
         if generation_classes is not None:
@@ -294,7 +296,8 @@ class BrainGenerator:
                                                 thickness=self.thickness,
                                                 bias_field_std=self.bias_field_std,
                                                 bias_scale=self.bias_scale,
-                                                return_gradients=self.return_gradients)
+                                                return_gradients=self.return_gradients,
+                                                inflate=self.inflate)
         out_shape = lab_to_im_model.output[0].get_shape().as_list()[1:]
         return lab_to_im_model, out_shape
 

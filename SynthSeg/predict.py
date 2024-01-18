@@ -524,6 +524,15 @@ def postprocess(post_patch, shape, pad_idx, crop_idx, n_dims,
                 post_patch[..., idx] *= tmp_mask
         post_patch = edit_volumes.crop_volume_with_idx(post_patch, pad_idx, n_dims=3, return_copy=False)
 
+    comp = np.sum(post_patch, axis=-1)
+    if np.any(np.isnan(comp)):
+        print("has nan !!!!!!!!!!!!")
+    if np.any(comp == 0):
+        print("has zero !!!!!")
+        print(np.sum(comp == 0))
+    else:
+        print("no zero")
+
     # normalise posteriors and get hard segmentation
     if keep_biggest_component | (topology_classes is not None):
         post_patch /= np.sum(post_patch, axis=-1)[..., np.newaxis]
