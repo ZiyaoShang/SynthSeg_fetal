@@ -21,5 +21,3 @@ B. Billot, D.N. Greve, O. Puonti, A. Thielscher, K. Van Leemput, B. Fischl, A.V.
 Medical Image Analysis (2023) \
 [ [article](https://www.sciencedirect.com/science/article/pii/S1361841523000506) | [arxiv](https://arxiv.org/abs/2107.09559) | [bibtex](bibtex.bib) ]
 
-If you have any question regarding the usage of this code, or any suggestions to improve it, please raise an issue or 
-contact us at: bbillot@mit.edu
