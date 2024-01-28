@@ -4,8 +4,8 @@
 Domain shift has always been a crucial topic for medical image segmentation. It is a common issue that deep segmentation networks often exhibit performance problems when applied to data that deviates from what the model is trained on. For computer-assisted studies of fetal brain development and pathology, it is crucial that accurate and consistent segmentation schemes be used for data acquired in very different settings. In this project, we developed a Multi-centric developing brain MRI segmentation framework by adapting SynthSeg[https://github.com/BBillot/SynthSeg] so that it could be used on datasets with large domain shifts. Our modifications are mainly focused on training data preprocessing, data augmentation, and model inference. Our results show that the models we trained are able to generalize to subjects with a variety of developmental ages, image attributes (size, quality, etc), modality, pathology, and background noises. 
 
 ## Code 
-The code to run the adapted version of training/validation/testing is located here[https://github.com/ZiyaoShang/SynthSeg_fetal/tree/master/scripts/fetal_scripts].
-Project-specific pre/postprocessing helper functions are located here[https://github.com/ZiyaoShang/SynthSeg_fetal/blob/master/scripts/fetal_scripts/helpers.py]
+The code to run the adapted version of training/validation/testing is located [here](https://github.com/ZiyaoShang/SynthSeg_fetal/tree/master/scripts/fetal_scripts).
+Project-specific pre/postprocessing helper functions are located [here](https://github.com/ZiyaoShang/SynthSeg_fetal/blob/master/scripts/fetal_scripts/helpers.py).
 
 ## Citation
 
