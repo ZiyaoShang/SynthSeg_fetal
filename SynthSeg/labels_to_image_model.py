@@ -173,6 +173,8 @@ def labels_to_image_model(labels_shape,
 
     # cropping
     if crop_shape != labels_shape:
+        print("crop_shape:")
+        print(crop_shape)
         labels = layers.RandomCrop(crop_shape)(labels)
 
     # flipping
@@ -183,7 +185,8 @@ def labels_to_image_model(labels_shape,
     # inflate random label
     if inflate:
         print("we inflate!!!!!!!!!!!!!!!!")
-        labels = layers.InflateLabels(labels_to_inflate=[1,2,3,4,5,6,7], inflate_val=[1,1,1,2,3,4], name='labels_inflate')(labels)
+        print(labels.shape)
+        labels = layers.InflateLabels(labels_to_inflate=[1,2,3,4,5,6,7], inflate_val=[1,1,1,2,3,4], name='labels_inflate')(labels) 
 
     # build synthetic image
     image = layers.SampleConditionalGMM(generation_labels)([labels, means_input, stds_input])
@@ -227,6 +230,8 @@ def labels_to_image_model(labels_shape,
 
     # resample labels at target resolution
     if crop_shape != output_shape:
+        print("output_shape")
+        print(output_shape)
         labels = l2i_et.resample_tensor(labels, output_shape, interp_method='nearest')
 
     # map generation labels to segmentation values

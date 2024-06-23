@@ -27,6 +27,7 @@ import tensorflow as tf
 
 # project imports
 from SynthSeg.training import training
+from scripts.fetal_scripts.feature_extractor import extract
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 tf.config.threading.set_inter_op_parallelism_threads(2)
@@ -36,8 +37,8 @@ inter_op_threads = tf.config.threading.get_inter_op_parallelism_threads()
 print(f"Inter-op parallelism threads: {inter_op_threads}")
 
 # path training label maps
-path_training_label_maps = '/home/zshang/SP/data/grand_train_all/SP_exp/train'
-path_model_dir = '/home/zshang/SP/data/grand_train_all/SP_exp/model'
+path_training_label_maps = '/home/zshang/SP/data/ZURICH/all_extra_label_centered_seg_train'
+path_model_dir = '/home/zshang/SP/data/ZURICH/experiments/model/prelim_test'
 # path_model_dir = '/home/zshang/SP/data/ZURICH/experiments/model/delete'
 batchsize = 1
 
@@ -70,7 +71,7 @@ n_neutral_labels = 9
 path_segmentation_labels = np.array([0,0,1,2,3,4,5,6,7])
 
 # shape and resolution of the outputs
-target_res = 1.0
+target_res = None
 output_shape = 160
 # important!!! output_div_by_n == 2 ** n_levels
 n_channels = 1
@@ -89,12 +90,18 @@ nonlin_std = 4.
 bias_field_std = .7
 
 # acquisition resolution parameters
-randomise_res = False
+randomise_res = True
 
 # note the background is not set to black
 
 inflate = True
 # labels = layers.InflateLabels(labels_to_inflate=[1,2,3,4,5,6,7], inflate_val=[1,1,1,2,3,4], name='labels_inflate')(labels)
+weighted_sampling = True
+
+# ------------------------------------------------------ weighted sampling  ------------------------------------------------------
+subjects_prob = None
+if weighted_sampling:
+    subjects_prob = extract(seg_path=path_training_label_maps, labels_all=[0, 1, 2, 3, 4, 5, 6, 7])
 
 # ------------------------------------------------------ Training ------------------------------------------------------
 
@@ -102,6 +109,7 @@ training(path_training_label_maps,
          path_model_dir,
          generation_labels=path_generation_labels,
          segmentation_labels=path_segmentation_labels,
+         subjects_prob=subjects_prob,
          n_neutral_labels=n_neutral_labels,
          batchsize=batchsize,
          n_channels=n_channels,

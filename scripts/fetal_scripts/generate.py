@@ -30,13 +30,15 @@ import numpy as np
 import tensorflow as tf
 import time
 
+from scripts.fetal_scripts.feature_extractor import extract
+
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 tf.config.threading.set_inter_op_parallelism_threads(8)
 # tf.compat.v2.config.experimental_run_functions_eagerly(True)
 # tf.compat.v1.config.experimental_run_functions_eagerly(True)
 
 # script parameters
-n_examples = 20  # number of examples to generate in this script
+n_examples = 10  # number of examples to generate in this script
 result_dir = '/home/zshang/SP/data/ZURICH/experiments/generator_examples'  # folder where examples will be saved
 
 
@@ -98,12 +100,11 @@ n_channels = 1
 # We have the possibility to generate training examples at a different resolution than the training label maps (e.g.
 # when using ultra HR training label maps). Here we want to generate at the same resolution as the training label maps,
 # so we set this to None.
-target_res = 1.0
+target_res = None
 
 # The generative model offers the possibility to randomly crop the training examples to a given size.
 # Here we crop them to 160^3, such that the produced images fit on the GPU during training.
 output_shape = 160
-
 output_div_by_n = 32
 
 
@@ -148,15 +149,23 @@ bias_field_std = 0.7  # this controls the maximum bias field corruption (higher 
 
 # This enables us to randomise the resolution of the produces images.
 # Although being only one parameter, this is crucial !!
-randomise_res = False
+randomise_res = True
 # default: true 
 
-inflate = False
+inflate = True
+weighted_sampling = True
+
+# ------------------------------------------------------ weighted sampling  ------------------------------------------------------
+subjects_prob = None
+if weighted_sampling:
+    subjects_prob = extract(seg_path=path_label_map, labels_all=[0, 1, 2, 3, 4, 5, 6, 7])
+
 # ------------------------------------------------------ Generate ------------------------------------------------------
 
 # instantiate BrainGenerator object
 brain_generator = BrainGenerator(labels_dir=path_label_map,
                                  generation_labels=generation_labels,
+                                 subjects_prob=subjects_prob,
                                  n_neutral_labels=n_neutral_labels,
                                  prior_distributions=prior_distributions,
                                  generation_classes=generation_classes,
