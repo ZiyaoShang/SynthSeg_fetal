@@ -8,6 +8,7 @@ from ext.lab2im.utils import get_volume_info, save_volume, get_list_labels, list
 from SynthSeg.evaluate import evaluation
 
 
+
 def print_file_info():
     folder_path = '/Users/ziyaoshang/Desktop/fa2023/SP/synthseg_data/zurich/orig/seg'
     file_extension = '*_dseg.nii.gz'
@@ -18,8 +19,7 @@ def print_file_info():
     for file in files:
         # print(i)
         i+=1
-        im, shp, aff, n_dims, n_channels, h, im_res = get_volume_info(file, return_volume=True, aff_ref=None,
-                                                                         max_channels=10)
+        im, shp, aff, n_dims, n_channels, h, im_res = get_volume_info(file, return_volume=True, aff_ref=None,max_channels=10)
         print(aff[0,0], aff[1,1], aff[2,2])
         # assert [aff[0,0], aff[1,1], aff[2,2]] == [-1.125, -1.125, 1.125]
 
@@ -27,10 +27,10 @@ def print_file_info():
 
 
 def center_labels():
-
-    folder_path = "/Users/ziyaoshang/Desktop/fa2023/SP/synthseg_data/zurich/all_extra_label_seg"
+    print("center_labels()")
+    folder_path = "/home/zshang/SP/data/ZURICH/all_extra_label_bgsubd_not_centered_seg"
     file_extension = '*_dseg.nii.gz'
-    save_path = "/Users/ziyaoshang/Desktop/fa2023/SP/synthseg_data/zurich/all_extra_label_centered_seg"
+    save_path = "/home/zshang/SP/data/ZURICH/all_extra_label_bgsubd_centered_seg"
     # files = glob.glob(os.path.join(folder_path, file_extension))
     files = glob.glob(os.path.join(folder_path, '**', file_extension), recursive=True)
 
@@ -63,9 +63,10 @@ def center_labels():
 
 
 def add_extra_cerebral_as_additional_label():
-    seg_path = "/Users/ziyaoshang/Desktop/fa2023/SP/delete/ZURICH_SPINABIFIDA/seg"
-    img_path = "/Users/ziyaoshang/Desktop/fa2023/SP/delete/ZURICH_SPINABIFIDA/img"
-    save_path = "/Users/ziyaoshang/Desktop/fa2023/SP/delete/ZURICH_SPINABIFIDA/seg_all_extra_label"
+    print("add_extra_cerebral_as_additional_label()")
+    seg_path = "/home/zshang/SP/data/ZURICH/original_data/seg"
+    img_path = "/home/zshang/SP/data/ZURICH/original_data/mri"
+    save_path = "/home/zshang/SP/data/ZURICH/all_extra_label_not_centered_seg"
     seg_list = sorted(glob.glob(seg_path + '/*'))
     # print(seg_list)
     img_list = sorted(glob.glob(img_path + '/*'))
@@ -79,14 +80,8 @@ def add_extra_cerebral_as_additional_label():
 
         assert img_list[i].split('/')[-1].split('_')[0] == seg_list[i].split('/')[-1].split('_')[0]
 
-        img_im, img_shp, img_aff, img_n_dims, img_n_channels, img_h, img_im_res = get_volume_info(img_list[i],
-                                                                                                  return_volume=True,
-                                                                                                  aff_ref=None,
-                                                                                                  max_channels=10)
-        seg_im, seg_shp, seg_aff, seg_n_dims, seg_n_channels, seg_h, seg_im_res = get_volume_info(seg_list[i],
-                                                                                                  return_volume=True,
-                                                                                                  aff_ref=None,
-                                                                                                  max_channels=10)
+        img_im, img_shp, img_aff, img_n_dims, img_n_channels, img_h, img_im_res = get_volume_info(img_list[i],return_volume=True,aff_ref=None, max_channels=10)
+        seg_im, seg_shp, seg_aff, seg_n_dims, seg_n_channels, seg_h, seg_im_res = get_volume_info(seg_list[i],return_volume=True,aff_ref=None, max_channels=10)
         assert (np.all(img_shp == seg_shp))
         assert (np.all(np.abs(img_aff - seg_aff) < 0.0001)), print(str(img_aff) + str(seg_aff))
         assert (img_n_dims == img_n_dims)
@@ -96,6 +91,9 @@ def add_extra_cerebral_as_additional_label():
         assert np.all(seg_im >= 0)
         assert np.all(img_im >= 0)
         assert isinstance(seg_im[0, 0, 0], np.float64)
+        assert isinstance(img_im[0, 0, 0], np.float64)
+        assert isinstance(img_im_res[0], np.float32)
+        assert isinstance(seg_im_res[0], np.float32)
 
         ext_ce = np.logical_and(seg_im == 0, img_im != 0)
         seg_im[ext_ce] = np.dtype(seg_im[0, 0, 0]).type(10)
@@ -165,31 +163,33 @@ def sort_zurich_files():
         shutil.copy(f, "/Users/ziyaoshang/Desktop/fa2023/SP/synthseg_data/zurich/seg")
 
 def load_results():
+    val = True
     folder = "/Users/ziyaoshang/Desktop/fa2023/SP/delete/temp_final_week_useful/arrs"
-    for i in ['003', '004','005','006','007','008','009','010','011','012','013','014','015','016','017','018','019']:
-        # for i in ['008', '015', '018']:
-        print(f"dice{i}.npy")
-        dice = np.load(os.path.join(folder, f"dice_{i}.npy"))
-        # mean_distance = np.load(os.path.join(folder, "mean_distance.npy"))
-        # hausdorff = np.load(os.path.join(folder, "hausdorff.npy"))
-        # print("hausdorff")
-        # print(np.mean(hausdorff, axis=1))
-        # print("mean_distance")
-        # print(np.mean(mean_distance, axis=1))
-        # print("dice")
-        # print(np.mean(dice, axis=1))
-        if np.mean(np.mean(dice, axis=1)[1:]) * 100 > 72:
-            print(np.mean(np.mean(dice, axis=1)[1:]) * 100)
+    if val:
+        for i in ['003', '004','005','006','007','008','009','010','011','012','013','014','015','016','017','018','019']:
+            # for i in ['008', '015', '018']:
+            print(f"dice{i}.npy")
+            dice = np.load(os.path.join(folder, f"dice_{i}.npy"))
+            # mean_distance = np.load(os.path.join(folder, "mean_distance.npy"))
+            # hausdorff = np.load(os.path.join(folder, "hausdorff.npy"))
+            # print("hausdorff")
+            # print(np.mean(hausdorff, axis=1))
+            # print("mean_distance")
+            # print(np.mean(mean_distance, axis=1))
+            # print("dice")
+            # print(np.mean(dice, axis=1))
+            if np.mean(np.mean(dice, axis=1)[1:]) * 100 > 72:
+                print(np.mean(np.mean(dice, axis=1)[1:]) * 100)
 
-        print('\n')
+            print('\n')
 
 def draw_boxplots_based_onresult_array():
     import matplotlib.pyplot as plt
     import numpy as np
 
-    data_path = "/Users/ziyaoshang/Desktop/fa2023/SP/delete/temp_final_week_useful/res/DHCP_PRETERM/T2/dice.npy"
-    save_path = "/Users/ziyaoshang/Desktop/fa2023/SP/delete/temp_final_week_useful/res/DHCP_PRETERM/T2/dice_e8.png"
-    table_name = "grand_e8->DHCP_PRETERM_T2: dice"
+    data_path = "/home/zshang/SP/data/ZURICH/experiments/results/prelim/dice.npy"
+    save_path = "/home/zshang/SP/data/ZURICH/experiments/results/prelim/prelimdice_e8.png"
+    table_name = "prelim: dice_e8_ZURICH"
 
     # data_path = "/Users/ziyaoshang/Desktop/fa2023/SP/delete/seg/dice.npy"
     # save_path = "/Users/ziyaoshang/Desktop/fa2023/SP/delete/dice.png"
@@ -199,7 +199,7 @@ def draw_boxplots_based_onresult_array():
 
     data = np.load(data_path)
     fig, ax = plt.subplots()
-
+    print(np.mean(np.mean(data, axis=1)[1:]))
     for i in range(data.shape[0]):
         ax.boxplot(data[i, :], positions=[i], widths=0.6, showfliers=False)
 
@@ -256,11 +256,11 @@ def invert_mri_intensities():
         save_volume(volume=img_im, aff=img_aff, header=img_h, path=file_name, res=img_im_res, dtype="float64", n_dims=img_n_dims)
 
 
-def resample_seg_according_to_base_vol(to_resample = '/Users/ziyaoshang/Desktop/fa2023/SP/results/zurich/unify_voxel_size_e10/raw_seg',
+def resample_seg_according_to_base_vol(to_resample = '/home/zshang/SP/data/CHUV/experiments/results/prelim/raw_seg',
                                        to_resample_file_extension = '*_synthseg.nii.gz',
-                                       base='/Users/ziyaoshang/Desktop/fa2023/SP/synthseg_data/zurich/orig/seg',
-                                       base_file_extension = '*_dseg.nii.gz',
-                                       save_path = "/Users/ziyaoshang/Desktop/fa2023/SP/results/zurich/unify_voxel_size_e10/final_seg"):
+                                       base='/home/zshang/SP/data/CHUV/less_bg_with_extra_cereb/img',
+                                       base_file_extension = '*_T2w.nii.gz',
+                                       save_path = "/home/zshang/SP/data/CHUV/experiments/results/prelim/fin_seg"):
 
     to_resample_files = sorted(glob.glob(os.path.join(to_resample, '**', to_resample_file_extension), recursive=True))
     base_files = sorted(glob.glob(os.path.join(base, '**', base_file_extension), recursive=True))
@@ -277,8 +277,8 @@ def resample_seg_according_to_base_vol(to_resample = '/Users/ziyaoshang/Desktop/
         save_volume(volume=volume2, aff=b_aff, header=b_h, path=file_name, res=b_im_res, dtype="float64", n_dims=b_n_dims)
 
 
-def evaluate_own(gt_dir='/Users/ziyaoshang/Desktop/fa2023/SP/synthseg_data/zurich/orig/seg',
-                 seg_dir="/Users/ziyaoshang/Desktop/fa2023/SP/results/zurich/unify_voxel_size_e10/final_seg"):
+def evaluate_own(gt_dir='/home/zshang/SP/data/CHUV/less_bg_with_extra_cereb/seg',
+                 seg_dir='/home/zshang/SP/data/CHUV/experiments/results/prelim/fin_seg'):
 
     evaluation(gt_dir=gt_dir,
                seg_dir=seg_dir,
@@ -609,15 +609,18 @@ def t_test_on_label():
 
 
 def divide_bg_using_kmeans():
+    print("divide_bg_using_kmeans()")
     from sklearn.cluster import KMeans
+    from sklearn.preprocessing import StandardScaler, MinMaxScaler
     import warnings
 
     warnings.filterwarnings("ignore")
 
-    all_bg_folder = "/Users/ziyaoshang/Desktop/fa2023/SP/delete/new_wien/near_seg"
-    img_folder = "/Users/ziyaoshang/Desktop/fa2023/SP/delete/new_wien/near_img"
-    save_path = '/Users/ziyaoshang/Desktop/fa2023/SP/delete/new_wien/fin_seg'
-    bg_labels = [10, 11, 12]
+    all_bg_folder = "/home/zshang/SP/data/ZURICH/all_extra_label_not_centered_seg"
+    img_folder = "/home/zshang/SP/data/ZURICH/original_data/mri"
+    save_path = '/home/zshang/SP/data/ZURICH/all_extra_label_bgsubd_not_centered_seg'
+    bg_labels = [10, 11, 12, 13]
+    n_clusters = len(bg_labels)
 
     seg_list = sorted(glob.glob(all_bg_folder + '/*'))
     img_list = sorted(glob.glob(img_folder + '/*'))
@@ -629,14 +632,8 @@ def divide_bg_using_kmeans():
         assert img_list[i].split('/')[-1].split('_')[1].split('-')[1] == \
                seg_list[i].split('/')[-1].split('_')[1].split('-')[1]
 
-        img_im, img_shp, img_aff, img_n_dims, img_n_channels, img_h, img_im_res = get_volume_info(img_list[i],
-                                                                                                  return_volume=True,
-                                                                                                  aff_ref=None,
-                                                                                                  max_channels=10)
-        seg_im, seg_shp, seg_aff, seg_n_dims, seg_n_channels, seg_h, seg_im_res = get_volume_info(seg_list[i],
-                                                                                                  return_volume=True,
-                                                                                                  aff_ref=None,
-                                                                                                  max_channels=10)
+        img_im, img_shp, img_aff, img_n_dims, img_n_channels, img_h, img_im_res = get_volume_info(img_list[i],return_volume=True, aff_ref=None, max_channels=10)
+        seg_im, seg_shp, seg_aff, seg_n_dims, seg_n_channels, seg_h, seg_im_res = get_volume_info(seg_list[i],return_volume=True,aff_ref=None, max_channels=10)
         assert (np.all(img_shp == seg_shp))
         assert (np.all(np.abs(img_aff - seg_aff) < 0.001)), img_aff - seg_aff
         assert (img_n_dims == img_n_dims)
@@ -652,9 +649,12 @@ def divide_bg_using_kmeans():
         inds = np.where(seg_im == 10)
         vects = np.column_stack([inds[0], inds[1], inds[2], img_im[inds]])
         # print(inds[0].shape)
-
-        kmeans = KMeans(n_clusters=3, random_state=42, init="k-means++")
-        kmeans.fit(vects)
+        normalized_data = MinMaxScaler().fit_transform(vects.copy()[:,-1].reshape(-1, 1))
+        # normalized_data = MinMaxScaler().fit_transform(vects.copy())
+        # normalized_data = vects.copy()
+        # normalized_data[:, -1] *= 3
+        kmeans = KMeans(n_clusters=n_clusters, random_state=42, init="k-means++")
+        kmeans.fit(normalized_data)
         labels = kmeans.labels_
 
         for l in range(labels.shape[0]):
@@ -808,14 +808,8 @@ def temp():
 
         # assert img_list[i].split('/')[-1].split('_')[0] == seg_list[i].split('/')[-1].split('_')[0]
 
-        img_im, img_shp, img_aff, img_n_dims, img_n_channels, img_h, img_im_res = get_volume_info(img_list[i],
-                                                                                                  return_volume=True,
-                                                                                                  aff_ref=None,
-                                                                                                  max_channels=10)
-        seg_im, seg_shp, seg_aff, seg_n_dims, seg_n_channels, seg_h, seg_im_res = get_volume_info(seg_list[i],
-                                                                                                  return_volume=True,
-                                                                                                  aff_ref=None,
-                                                                                                  max_channels=10)
+        img_im, img_shp, img_aff, img_n_dims, img_n_channels, img_h, img_im_res = get_volume_info(img_list[i],return_volume=True,aff_ref=None,max_channels=10)
+        seg_im, seg_shp, seg_aff, seg_n_dims, seg_n_channels, seg_h, seg_im_res = get_volume_info(seg_list[i], return_volume=True, aff_ref=None,max_channels=10)
         assert np.all(img_im == seg_im)
         print("s")
 
@@ -823,11 +817,12 @@ def temp():
 # sort_files()
 # print_file_info()
 # add_extra_cerebral_as_additional_label()
+divide_bg_using_kmeans()
+center_labels()
 # adjust_volumn_to_trainable_by_near()
 # align_vol_to_ras_coords()
 # sort_chuv_files()
 # remove_mri_ex_cereb_by_masking()
-# center_labels()
 # sort_chuv_files()
 # load_results()
 # draw_boxplots_based_onresult_array()
@@ -837,7 +832,6 @@ def temp():
 # remove_most_backgrounds_and_center_vol()
 # replace_gt_with_smoothed_label()
 # t_test_on_label()
-# divide_bg_using_kmeans()
 # discrete_label_smoothing()
 
 # temp()

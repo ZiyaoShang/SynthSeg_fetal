@@ -37,8 +37,8 @@ inter_op_threads = tf.config.threading.get_inter_op_parallelism_threads()
 print(f"Inter-op parallelism threads: {inter_op_threads}")
 
 # path training label maps
-path_training_label_maps = '/home/zshang/SP/data/ZURICH/all_extra_label_centered_seg_train'
-path_model_dir = '/home/zshang/SP/data/ZURICH/experiments/model/prelim_test'
+path_training_label_maps = '/home/zshang/SP/data/ZURICH/all_extra_label_bgsubd_centered_seg_train'
+path_model_dir = '/home/zshang/SP/data/ZURICH/experiments/model/updated_clustering_bgsubd'
 # path_model_dir = '/home/zshang/SP/data/ZURICH/experiments/model/delete'
 batchsize = 1
 
@@ -56,8 +56,8 @@ feat_multiplier = 2    # if feat_multiplier is set to 1, we will keep the number
 lr = 1e-4               # learning rate
 wl2_epochs = 1          # number of pre-training epochs with wl2 metric w.r.t. the layer before the softmax
 # IMPORTANT: set this to zero if using checkpoint !!!!!
-dice_epochs = 50        # number of training epochs
-steps_per_epoch = 3000  # number of iteration per epoch
+dice_epochs = 20        # number of training epochs
+steps_per_epoch = 5000  # number of iteration per epoch
 checkpoint = None
 # checkpoint = '/home/zshang/SP/data/ZURICH/experiments/model/delete/dice_001.h5'
 # checkpoint = None
@@ -66,9 +66,9 @@ checkpoint = None
 # these parameters are from the previous tutorial, and thus we do not explain them again here
 
 # generation and segmentation labels
-path_generation_labels = np.array([0,10,1,2,3,4,5,6,7])
-n_neutral_labels = 9
-path_segmentation_labels = np.array([0,0,1,2,3,4,5,6,7])
+path_generation_labels = np.array([0,10,11,12,13,1,2,3,4,5,6,7])
+n_neutral_labels = 12
+path_segmentation_labels = np.array([0,0,0,0,0,1,2,3,4,5,6,7])
 
 # shape and resolution of the outputs
 target_res = None
@@ -101,10 +101,10 @@ weighted_sampling = True
 # ------------------------------------------------------ weighted sampling  ------------------------------------------------------
 subjects_prob = None
 if weighted_sampling:
-    subjects_prob = extract(seg_path=path_training_label_maps, labels_all=[0, 1, 2, 3, 4, 5, 6, 7])
+    subjects_prob = extract(seg_path=path_training_label_maps, labels_all=path_generation_labels, inner_labels=[2,3,4,5,6,7], n_clusters=3)
 
 # ------------------------------------------------------ Training ------------------------------------------------------
-
+print("__commence trianing__")
 training(path_training_label_maps,
          path_model_dir,
          generation_labels=path_generation_labels,

@@ -45,7 +45,7 @@ result_dir = '/home/zshang/SP/data/ZURICH/experiments/generator_examples'  # fol
 # ---------- Input label maps and associated values ----------
 
 # folder containing label maps to generate images from (note that they must have a ".nii", ".nii.gz" or ".mgz" format)
-path_label_map = '/home/zshang/SP/data/ZURICH/all_extra_label_centered_seg_train'
+path_label_map = '/home/zshang/SP/data/ZURICH/all_extra_label_bgsubd_centered_seg'
 # path_label_map = '/home/zshang/SP/data/ZURICH/one_seg'
 
 # Here we specify the structures in the label maps for which we want to generate intensities.
@@ -71,13 +71,13 @@ path_label_map = '/home/zshang/SP/data/ZURICH/all_extra_label_centered_seg_train
 #                               53,   # right hippocampus
 #                               57]   # right lesions
 # Note that plenty of structures are not represented here..... but it's just an example ! :)
-generation_labels = np.array([0,10,1,2,3,4,5,6,7])
+generation_labels = np.array([0,10,11,12,13,1,2,3,4,5,6,7])
 
 
 # We also have to specify the number of non-sided labels in order to differentiate them from the labels with
 # right/left values.
 # Example: (continuing the previous one): in this example it would be 3 (background, CSF, extra-cerebral soft tissues).
-n_neutral_labels = 9
+n_neutral_labels = 12
 
 # By default, the output label maps (i.e. the target segmentations) contain all the labels used for generation.
 # However, we may want not to predict all the generation labels (e.g. extra-cerebral soft tissues).
@@ -89,7 +89,7 @@ n_neutral_labels = 9
 # Note that in this example the labels 24 (CSF), and 507 (extra-cerebral soft tissues) are not predicted, or said
 # differently they are segmented as background.
 # Also, the left and right lesions (labels 25 and 57) are segmented as left and right white matter (labels 2 and 41).
-output_labels = [0,0,1,2,3,4,5,6,7]
+output_labels = [0,0,0,0,0,1,2,3,4,5,6,7]
 
 
 # ---------- Shape and resolution of the outputs ----------
@@ -158,7 +158,7 @@ weighted_sampling = True
 # ------------------------------------------------------ weighted sampling  ------------------------------------------------------
 subjects_prob = None
 if weighted_sampling:
-    subjects_prob = extract(seg_path=path_label_map, labels_all=[0, 1, 2, 3, 4, 5, 6, 7])
+    subjects_prob = extract(seg_path=path_label_map, labels_all=generation_labels, inner_labels=[2,3,4,5,6,7], n_clusters=3)
 
 # ------------------------------------------------------ Generate ------------------------------------------------------
 
