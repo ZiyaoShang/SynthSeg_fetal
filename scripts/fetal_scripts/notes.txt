@@ -1,20 +1,3 @@
-Solved:
-> Inference output does not match the input MRIs (solved: caused by 0.5 mm resolution, set resample==True or disable target_resolution)
-> Label index does not match freesurfer convention used in SynthSeg (solved: edited available label list in lab2im.utils.get_list_labels.py)
-> permission for Science cluster.
-> register for semester project (need project proposal)
-> The image is not centered and the overall dimensions are too large (to much blank space), which causes the random croping (160) during augmentation to tend to miss part of the brain. (TODO: brain centering and cropping bg labels, or increase segmentation/generation ) (no longer needed, image size have high variances and the inputs to synthseg must be the same)
-> If we edit the resolution to 1 and center the brain, setting the aff to identity would lead to incorrect transformations. (no longer needed, image size have high variances and the inputs to synthseg must be the same. Thus, random-cropping is also disabled)
-
-Unsolved:
-> setup for Leomed cluster.
-> automatic shutdown of all process 2-3 h after logging off Science.
-> skull scripping (issue--ZURICH are not skull-scripped while CHUV are): 1, mask all unlabelled voxels with intensity>0 as a new label. 2, generate these labels for 50% of the images but never segment them. Alternative: use the bayasian stuff cited by synthseg (probably not needed). 
-
-Note: the current full_zurich trained model uses output==160, which has been corrected to None for half_processed.
-
-
-
 
 dependencies setup:
 links:
@@ -44,6 +27,50 @@ scripts:
 resource tracking:
 > python -u -m scripts.fetal_scripts.cpu_monitor > cpu_log.txt 2>&1 &
 > nohup watch -n 1 "nvidia-smi | awk 'NR==14' >> gpu_log.txt" >/dev/null 2>&1 &
+
+Leomed:
+ssh -J zshang@jump-menze.leomed.ethz.ch -l zshang login-menze.leomed.ethz.ch
+
+Create env:
+> enable_modules
+> module load python/3.8.10
+> module load scipy-stack/2022a
+> VENV=/cluster/apps/menze/zshang/synthseg
+> python3.8 -m venv $VENV
+> source $VENV/bin/activate
+
+activate env: 
+>VENV=/cluster/apps/menze/zshang/synthseg
+>source $VENV/bin/activate
+
+run: 
+> sbatch -c 3 --mem-per-cpu=32G --gres=gpu:3 --time 40:00:00 --output=output_.txt --wrap "python -u -m scripts.fetal_scripts.training > logs 2>&1"
+
+srun --job-name interactive --cpus-per-task 1 --mem-per-cpu 10000 --time 01:00:00 -p gpu --gres=gpu:rtx2080ti:1 --pty bash
+
+send file: 
+scp /Users/ziyaoshang/Desktop/trash/synth/img_10_cluster_acexp_01234591011151617_kmeans.png zshang@login-menze.leomed.ethz.ch:/cluster/work/menze/zshang/synthseg_data
+send folder:
+scp -r /Users/ziyaoshang/Desktop/FeTA_synthetic zshang@login-menze.leomed.ethz.ch:/cluster/work/menze/zshang/synthseg_data/zurich/synth
+
+Paths 
+/cluster/home/zshang/SP/SynthSeg_fetal
+
+conda env:
+
+install conda: 
+https://unlimited.ethz.ch/display/LeoMed2/Conda#Conda-InstallingConda
+
+set solver:
+conda install -n base conda-libmamba-solver
+conda config --set solver libmamba
+
+install dependencies:
+conda install --file requirements_python3.8.txt -c anaconda 
+(without the conda-forge channel)
+next...tune if there are conflicts
+
+
 
 
 Synthseg:
