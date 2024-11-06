@@ -3,8 +3,6 @@ import nibabel as nib
 import glob
 import os
 import numpy as np
-# from ext.lab2im.edit_volumes import align_volume_to_ref, crop_volume_around_region, pad_volume, resample_volume, \
-#     resample_volume_like, crop_volume, crop_volume_with_idx
 from ext.lab2im.utils import get_volume_info, save_volume, get_list_labels, list_images_in_folder
 from scipy.signal import convolve
 from skimage import measure
@@ -17,47 +15,12 @@ from sklearn.metrics import pairwise_distances_argmin_min
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 
-def classify_feat_importance_2(X, y):
-    from sklearn.ensemble import RandomForestClassifier
-    from sklearn.metrics import accuracy_score
-
-    rf = RandomForestClassifier(n_estimators=30, max_depth=5, min_samples_leaf=10, min_samples_split=10, random_state=42, max_features='sqrt')
-    rf.fit(X, y)
-    y_pred = rf.predict(X)
-
-    accuracy = accuracy_score(y, y_pred)
-    print(f'Accuracy: {accuracy}')
-    print("feature_importances, the higher the more important")
-    print(rf.feature_importances_)
-    return rf.feature_importances_
-
-
-def classify_feat_importance_3(X, y):
-    from sklearn.ensemble import RandomForestRegressor
-    from sklearn.metrics import mean_squared_error
-
-    rf = RandomForestRegressor(n_estimators=30, max_depth=5, min_samples_leaf=10, min_samples_split=10, random_state=42, max_features='sqrt')
-    rf.fit(X, y)
-    y_pred = rf.predict(X)
-
-    accuracy = mean_squared_error(y, y_pred)
-    print(f'Accuracy: {accuracy}')
-    print("feature_importances, the higher the more important")
-    print(rf.feature_importances_)
-    return rf.feature_importances_
-
-
 def process_feratures( 
     raw_features=None,
     n_clusters=3,
     clustering_method='gmm',
     n_components=5,
     save_plot=False,
-    gt_classes_2=None,
-    gt_classes_3=None,
-    accord_2=False,
-    accord_3=False,
-    accord_23=False,
     accord_exp=False,
     fig_dir=None):
 
@@ -65,42 +28,9 @@ def process_feratures(
     normalized_data = MinMaxScaler().fit_transform(raw_features)
     assert normalized_data.shape == (raw_features.shape[0], 21)
 
-    assert accord_2 + accord_3 + accord_23 + accord_exp == 1
-
-    if accord_2:
-        to_choose = np.argsort(classify_feat_importance_2(X=normalized_data,y=gt_classes_2))[-5:]
-        print("top_indexes_2")
-        print(to_choose)
-        normalized_data[:, to_choose] *= 2
-
-    if accord_3:
-        to_choose = np.argsort(classify_feat_importance_3(X=normalized_data,y=gt_classes_3))[-5:]
-        print("top_indexes_3")
-        print(to_choose)
-        normalized_data[:, to_choose] *= 2    
-    
-    if accord_23:
-        to_choose2 = np.argsort(classify_feat_importance_2(X=normalized_data,y=gt_classes_2))[-5:]
-        to_choose3 = np.argsort(classify_feat_importance_3(X=normalized_data,y=gt_classes_3))[-5:]
-        to_choose = np.unique(np.append(to_choose2, to_choose3))
-        print("top_indexes_23")
-        print(to_choose)
-        normalized_data[:, to_choose] *= 2
-
     if accord_exp:
-        # pass
-        # normalized_data[:, :12] *= 2
         print("normalized_data[:, [0,1,2,3,4,5,9,10,11,15,16,17]] *= 2")
         normalized_data[:, [0,1,2,3,4,5,9,10,11,15,16,17]] *= 2
-        # normalized_data[:, [19, 9, 18, 1, 0]] *= 2
-        # normalized_data[:, [18, 17, 16, 12, 5]] *= 2
-        # normalized_data[:, [0, 1, 5, 9, 12, 16, 17, 18, 19]] *= 2
-
-
-    # standardize feature sets 
-    # print("np.std(normalized_data, axis=0)")
-    # print(np.std(normalized_data, axis=0))
-
 
     # dimentionality reduction with PCA 
     assert normalized_data.shape == (raw_features.shape[0], 21)
@@ -150,39 +80,6 @@ def process_feratures(
     assert len(clusters) == lowdim_features.shape[0]
 
     if save_plot:
-        if gt_classes_2 is not None:
-            first_two = lowdim_features[:,:2]
-            colors = {True: 'red', False: 'green'}
-            color_map = np.array([colors[cls] for cls in list(gt_classes_2)])
-            plt.figure(figsize=(8, 6))
-            for s in range(first_two.shape[0]):
-                plt.scatter(first_two[s, 0], first_two[s, 1], edgecolors='w', linewidth=0.5, c=color_map[s], s=0.1, alpha=0.6)
-                plt.annotate(str(s+1), (first_two[s, 0], first_two[s, 1]), fontsize=6, ha='center', c=color_map[s])
-
-            plt.xlabel('Feature 1')
-            plt.ylabel('Feature 2')
-            plt.title('Scatter Plot of Data Points according to pathology')
-            plt.grid(False)
-            plt.savefig(fig_dir + 'img_path_acexp_01234591011151617_kmeans.png')
-
-        if gt_classes_3 is not None:
-            first_two = lowdim_features[:,:2]
-            mx = np.max(gt_classes_3)
-            mn = np.min(gt_classes_3)
-            col_age = (gt_classes_3 - mn) / (mx - mn)
-            # colors = [(1,0,0,), (0,0,1)]
-            color_map = np.array([(cls, 0, 1-cls) for cls in list(col_age)])
-            plt.figure(figsize=(8, 6))
-            for s in range(first_two.shape[0]):
-                plt.scatter(first_two[s, 0], first_two[s, 1], edgecolors='w', linewidth=0.5, c=color_map[s], s=1, alpha=0.6)
-                plt.annotate(str(int(gt_classes_3[s])), (first_two[s, 0], first_two[s, 1]), fontsize=6, ha='center', c=color_map[s])
-
-            plt.xlabel('Feature 1')
-            plt.ylabel('Feature 2')
-            plt.title('Scatter Plot of Data Points according to age')
-            plt.grid(False)
-            plt.savefig(fig_dir + 'img_age_acexp_01234591011151617_kmeans.png')
-
         first_two = lowdim_features[:,:2]
         colors = {0: 'red', 1: 'green', 2: 'blue', 3: 'purple', 4:'yellow', 5:'pink', 6:'black', 7:'gray', 8:'orange', 9:'brown'}
         color_map = np.array([colors[cls] for cls in list(clusters)])
@@ -388,5 +285,4 @@ extract_pret(save_plot=False, seg_path='/Users/ziyaoshang/Desktop/fa2023/SP/ziya
 # print(np.sum(np.abs(arr1 - arr2)))
 
 # print('done')
-# "weights_zurich+dhcp_train_clst.npy"
 
