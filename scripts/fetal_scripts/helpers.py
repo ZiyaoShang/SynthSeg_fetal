@@ -28,10 +28,10 @@ def print_file_info():
 
 def center_labels():
     print("center_labels()")
-    folder_path = "/home/zshang/SP/data/ZURICH/all_extra_label_bgsubd_not_centered_seg"
-    file_extension = '*_dseg.nii.gz'
-    save_path = "/home/zshang/SP/data/ZURICH/all_extra_label_bgsubd_centered_seg"
-    # files = glob.glob(os.path.join(folder_path, file_extension))
+    folder_path = "/Users/ziyaoshang/Desktop/zurich_synth/synth_1v1_extracereb"
+    file_extension = '*.nii.gz'
+    save_path = "/Users/ziyaoshang/Desktop/zurich_synth/synth_1v1_extracereb_centered"
+    allow_huge_input_sizes = False
     files = glob.glob(os.path.join(folder_path, '**', file_extension), recursive=True)
 
     # return
@@ -40,7 +40,6 @@ def center_labels():
         im, shp, aff, n_dims, n_channels, h, im_res = get_volume_info(file, return_volume=True, aff_ref=None, max_channels=10)
         assert isinstance(im[0, 0, 0], np.float64)
 
-        # crop around brain with a margin of 5
         new_vol, cropping, new_aff = crop_volume_around_region(im,
                                                            mask=None,
                                                            masking_labels=None,
@@ -50,9 +49,17 @@ def center_labels():
                                                            cropping_shape_div_by=None,
                                                            aff=aff,
                                                            overflow='strict')
-
+        # if any dimension of the original size of the labels is larger than 256, it would remain the original size, while the dimensions smaller than 256 would be padded to 256.
         final_vol, final_aff = pad_volume(new_vol, 256, padding_value=0, aff=new_aff, return_pad_idx=False)
-        assert final_vol.shape == (256,256,256)
+
+        if not allow_huge_input_sizes:
+            assert final_vol.shape == (256,256,256), final_vol.shape
+        else: # Here, we center-crop the remaining large dimensions into 256
+            if final_vol.shape != (256,256,256):
+                print("large volumn: " + file)
+                final_vol = crop_volume(final_vol, cropping_margin=None, cropping_shape=(256,256,256), aff=None, return_crop_idx=False, mode='center')
+        
+        assert final_vol.shape == (256,256,256), final_vol.shape
         save_file_name = os.path.join(save_path, file.split('/')[-1])
 
         # if (cropping[3] - cropping[0] > 192) | (cropping[4] - cropping[1] > 192) | (cropping[5] - cropping[2] > 192):
@@ -64,13 +71,13 @@ def center_labels():
 
 def add_extra_cerebral_as_additional_label():
     print("add_extra_cerebral_as_additional_label()")
-    seg_path = "/home/zshang/SP/data/ZURICH/original_data/seg"
-    img_path = "/home/zshang/SP/data/ZURICH/original_data/mri"
-    save_path = "/home/zshang/SP/data/ZURICH/all_extra_label_not_centered_seg"
+    seg_path = "/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/dHCP_fetal_orig/seg"
+    img_path = "/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/dHCP_fetal_orig/img"
+    save_path = "/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/dHCP_fetal_seg_exlabel"
     seg_list = sorted(glob.glob(seg_path + '/*'))
-    # print(seg_list)
+    print(len(seg_list))
     img_list = sorted(glob.glob(img_path + '/*'))
-    # print(img_list)
+    print(len(img_list))
     assert len(img_list) == len(seg_list)
     for i in range(len(img_list)):
         # print(seg_list[i].split('/')[-1].split('_')[0].split('-')[1])
@@ -87,7 +94,11 @@ def add_extra_cerebral_as_additional_label():
         assert (img_n_dims == img_n_dims)
         assert (img_n_channels == seg_n_channels)
         assert (np.all(img_im_res == seg_im_res))
-        assert np.sum(img_im > 0) == np.sum(img_im != 0)
+        # assert np.sum(img_im > 0) == np.sum(img_im != 0), np.min(img_im)
+        if not (np.sum(img_im > 0) == np.sum(img_im != 0)):
+            print("!!!reverting negative values: ")
+            assert (np.all(img_im[img_im < 0] > -0.0001))
+            img_im[img_im < 0] = 0.0
         assert np.all(seg_im >= 0)
         assert np.all(img_im >= 0)
         assert isinstance(seg_im[0, 0, 0], np.float64)
@@ -105,6 +116,49 @@ def add_extra_cerebral_as_additional_label():
         file_name = os.path.join(save_path, seg_list[i].split('/')[-1])
         save_volume(volume=seg_im, aff=seg_aff, header=seg_h, path=file_name, res=seg_im_res, dtype="float64", n_dims=seg_n_dims)
 
+def add_extra_cerebral_as_additional_label_synth():
+    print("add_extra_cerebral_as_additional_label()")
+    seg_path = "/Users/ziyaoshang/Desktop/zurich_synth/synth_1v1"
+    img_path = "/Users/ziyaoshang/Desktop/fa2023/SP/SP/data/ZURICH/original_data/mri_train"
+    save_path = "/Users/ziyaoshang/Desktop/zurich_synth/synth_1v1_extracereb"
+    seg_list = sorted(glob.glob(seg_path + '/*'))
+    # print(seg_list)
+    img_list = sorted(glob.glob(img_path + '/*'))
+    # print(img_list)
+    assert len(seg_list) / len(img_list) == 2
+    for i in range(len(img_list)):
+        for j in range(2):
+            # print(seg_list[i].split('/')[-1].split('_')[0].split('-')[1])
+
+            print("processing: " + str(seg_list[i*2+j].split('/')[-1]))
+            print(img_list[i].split('/')[-1].split('_')[0])
+
+            assert img_list[i].split('/')[-1].split('_')[0] == seg_list[i*2+j].split('/')[-1].split('_')[0]
+
+            img_im, img_shp, img_aff, img_n_dims, img_n_channels, img_h, img_im_res = get_volume_info(img_list[i],return_volume=True,aff_ref=None, max_channels=10)
+            seg_im, seg_shp, seg_aff, seg_n_dims, seg_n_channels, seg_h, seg_im_res = get_volume_info(seg_list[i*2+j],return_volume=True,aff_ref=None, max_channels=10)
+            assert (np.all(img_shp == seg_shp))
+            assert (np.all(np.abs(img_aff - seg_aff) < 0.0001)), print(str(img_aff) + str(seg_aff))
+            assert (img_n_dims == img_n_dims)
+            assert (img_n_channels == seg_n_channels)
+            assert (np.all(np.abs(img_im_res-seg_im_res) < 0.001)), str(img_im_res)+str(seg_im_res)
+            assert np.sum(img_im > 0) == np.sum(img_im != 0)
+            assert np.all(seg_im >= 0)
+            assert np.all(img_im >= 0)
+            assert isinstance(seg_im[0, 0, 0], np.float64)
+            assert isinstance(img_im[0, 0, 0], np.float64)
+            assert isinstance(img_im_res[0], np.float32)
+            assert isinstance(seg_im_res[0], np.float32)
+
+            ext_ce = np.logical_and(seg_im == 0, img_im != 0)
+            seg_im[ext_ce] = np.dtype(seg_im[0, 0, 0]).type(10)
+
+            # print(np.sum(np.logical_and(seg_im != 0, img_im == 0)))
+            # assert np.sum(img_im == 0) == np.sum(seg_im == 0), str(np.sum(img_im > 0)) + "  " + str(np.sum(seg_im > 0))
+            # print(np.dtype(seg_im[0, 0, 0]).type(10))
+            # print(np.average(img_im))
+            file_name = os.path.join(save_path, seg_list[i*2+j].split('/')[-1])
+            save_volume(volume=seg_im, aff=seg_aff, header=seg_h, path=file_name, res=seg_im_res, dtype="float64", n_dims=seg_n_dims)
 
 def remove_mri_ex_cereb_by_masking():
     seg_path = "/Users/ziyaoshang/Desktop/fa2023/SP/synthseg_data/vienna/seg"
@@ -143,24 +197,14 @@ def remove_mri_ex_cereb_by_masking():
         save_volume(volume=img_im, aff=img_aff, header=img_h, path=file_name, res=img_im_res, dtype="float64", n_dims=img_n_dims)
 
 
-def sort_chuv_files():
+def sort_files():
     import shutil
 
-    folder_path = '/Users/ziyaoshang/Desktop/fa2023/SP/transfer/VIENNA'
-    file_extension = '*_dseg.nii.gz'
+    folder_path = '/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/dHCP_fetal'
+    file_extension = '*_desc-restore_T2w.nii.gz'
     files = glob.glob(os.path.join(folder_path, '**', file_extension), recursive=True)
     for f in files:
-        shutil.copy(f, "/Users/ziyaoshang/Desktop/fa2023/SP/synthseg_data/vienna/seg")
-
-
-def sort_zurich_files():
-    import shutil
-
-    folder_path = '/Users/ziyaoshang/Desktop/fa2023/SP/FETAL/ZURICH'
-    file_extension = '*dseg.nii.gz'
-    files = glob.glob(os.path.join(folder_path, '**', file_extension), recursive=True)
-    for f in files:
-        shutil.copy(f, "/Users/ziyaoshang/Desktop/fa2023/SP/synthseg_data/zurich/seg")
+        shutil.move(f, "/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/dHCP_fetal_orig/img")
 
 def load_results():
     val = True
@@ -299,10 +343,11 @@ def evaluate_own(gt_dir='/home/zshang/SP/data/CHUV/less_bg_with_extra_cereb/seg'
 
 
 def remove_most_backgrounds_and_center_vol(
-                            seg_path = "/Users/ziyaoshang/Desktop/fa2023/SP/synthseg_data/zurich/zurich_orig_data_seg_test",
-                            img_path = "/Users/ziyaoshang/Desktop/fa2023/SP/synthseg_data/zurich/zurich_orig_data_mri_test",
-                            save_path = "/Users/ziyaoshang/Desktop/fa2023/SP/grand_experiment/test_data/processed/ZURICH_test/img",
-                            save_path2 = "/Users/ziyaoshang/Desktop/fa2023/SP/grand_experiment/test_data/processed/ZURICH_test/seg"):
+                            seg_path = "/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/transfer_T1/orig/seg",
+                            img_path = "/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/transfer_T1/orig/img",
+                            splitby = "_desc-",
+                            save_path = "/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/transfer_T1/test_lessbg/img",
+                            save_path2 = "/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/transfer_T1/test_lessbg/seg"):
 
     pad = False
     margin = 5
@@ -311,9 +356,9 @@ def remove_most_backgrounds_and_center_vol(
     assert len(img_list) == len(seg_list)
 
     for i in range(len(img_list)):
-        print("processing: " + str(img_list[i].split('/')[-1].split('_')[0]))
+        print("processing: " + str(img_list[i].split('/')[-1].split(splitby)[0]))
 
-        assert img_list[i].split('/')[-1].split('_')[0] == seg_list[i].split('/')[-1].split('_')[0]
+        assert img_list[i].split('/')[-1].split(splitby)[0] == seg_list[i].split('/')[-1].split(splitby)[0]
 
         img_im, img_shp, img_aff, img_n_dims, img_n_channels, img_h, img_im_res = get_volume_info(img_list[i],
                                                                                                   return_volume=True,
@@ -324,7 +369,7 @@ def remove_most_backgrounds_and_center_vol(
                                                                                                   aff_ref=None,
                                                                                                   max_channels=10)
         assert (np.all(img_shp == seg_shp))
-        assert (np.all(np.abs(img_aff - seg_aff) < 0.0001)), print(str(img_aff) + str(seg_aff))
+        assert (np.all(np.abs(img_aff - seg_aff) < 0.001)), print(str(img_aff) + str(seg_aff))
         assert (img_n_dims == img_n_dims)
         assert (img_n_channels == seg_n_channels)
         assert (np.all(img_im_res == seg_im_res))
@@ -614,11 +659,11 @@ def divide_bg_using_kmeans():
     from sklearn.preprocessing import StandardScaler, MinMaxScaler
     import warnings
 
-    warnings.filterwarnings("ignore")
+    # warnings.filterwarnings("ignore")
 
-    all_bg_folder = "/home/zshang/SP/data/ZURICH/all_extra_label_not_centered_seg"
-    img_folder = "/home/zshang/SP/data/ZURICH/original_data/mri"
-    save_path = '/home/zshang/SP/data/ZURICH/all_extra_label_bgsubd_not_centered_seg'
+    all_bg_folder = "/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/dHCP_fetal_seg_exlabel"
+    img_folder = "/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/dHCP_fetal_orig/img"
+    save_path = '/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/dHCP_fetal_seg_exlabel_bgsubd'
     bg_labels = [10, 11, 12, 13]
     n_clusters = len(bg_labels)
 
@@ -639,7 +684,11 @@ def divide_bg_using_kmeans():
         assert (img_n_dims == img_n_dims)
         assert (img_n_channels == seg_n_channels)
         assert (np.all(img_im_res == seg_im_res))
-        assert np.sum(img_im > 0) == np.sum(img_im != 0)
+        # assert np.sum(img_im > 0) == np.sum(img_im != 0)
+        if not (np.sum(img_im > 0) == np.sum(img_im != 0)):
+            print("!!!reverting negative values: ")
+            assert (np.all(img_im[img_im < 0] > -0.0001))
+            img_im[img_im < 0] = 0.0
         assert isinstance(seg_im[0, 0, 0], np.float64)
         assert isinstance(img_im[0, 0, 0], np.float64)
         assert isinstance(img_im_res[0], np.float32)
@@ -751,6 +800,21 @@ def discrete_label_smoothing():
         save_volume(volume=all_labels, aff=seg_aff, header=seg_h, path=seg_file_name, res=seg_im_res,
                     dtype="float64", n_dims=seg_n_dims)
 
+def force_50perc_with_noclst():
+    seg_list = sorted(glob.glob('/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/synth1v1+dhcp/*'))
+    synth = seg_list[:160]
+    dhcp = seg_list[160:]
+
+    assert np.all([(("_rec-" in f) or ("_json_" in f)) for f in synth])
+    assert np.all(["_dseg_FeTA_labels.nii.gz" in f for f in dhcp])
+
+    weights = np.array([0.5/len(synth)] * len(synth) + [0.5/len(dhcp)] * len(dhcp))
+    print(weights)
+    print(len(seg_list))
+    assert len(weights) == len(seg_list)
+    assert np.sum(weights) == 1.0
+
+    np.save("/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/weights_features/synth1v1+dhcp_sep_noclst/weights_synth1v1+dhcp_sep_noclst.npy", weights)
 
 def sheep_temp():
     img_path = "/Users/ziyaoshang/Desktop/fa2023/SP/grand_experiment/test_data/raw/sheep"
@@ -796,34 +860,61 @@ def sheep_temp():
 
 
 def temp():
-    seg_path = "/Users/ziyaoshang/Desktop/fa2023/SP/delete/train_0"
-    img_path = "/Users/ziyaoshang/Desktop/fa2023/SP/delete/train_1"
+    seg_path = "/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/transfer_T1_orig/seg"
+    img_path = "/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/transfer_T1_orig/img"
 
     seg_list = sorted(glob.glob(seg_path + '/*'))
     img_list = sorted(glob.glob(img_path + '/*'))
-    assert len(img_list) == len(seg_list)
+    # assert 
+    print(len(img_list))
+    print(len(seg_list))
+    seg_sub = []
+    img_sub = []
+    for i in range(len(seg_list)):
+        seg_sub.append(seg_list[i].split('/')[-1].split('_desc')[0])
+    for j in range(len(img_list)):
+        img_sub.append(img_list[j].split('/')[-1].split('_desc')[0])
 
-    for i in range(len(img_list)):
-        print("processing: " + str(img_list[i].split('/')[-1].split('_')[0]))
+    delsimg = [s for s in img_sub if s not in seg_sub]
+    delsseg = [s for s in seg_sub if s not in img_sub]
+    print(delsimg)
+    print(len(delsimg))
+    print(delsseg)
+    print(len(delsseg))
+    assert len(img_list) - len(delsimg) == len(seg_list) - len(delsseg)
 
-        # assert img_list[i].split('/')[-1].split('_')[0] == seg_list[i].split('/')[-1].split('_')[0]
+    for i in seg_list:
+        if np.any(np.array([(sub in i) for sub in delsseg])):
+            print(i.split('/')[-1])
+            os.remove(i)
+    for j in img_list:
+        if np.any(np.array([(sub in j) for sub in delsimg])):
+            print(j.split('/')[-1])
+            os.remove(j)
 
-        img_im, img_shp, img_aff, img_n_dims, img_n_channels, img_h, img_im_res = get_volume_info(img_list[i],return_volume=True,aff_ref=None,max_channels=10)
-        seg_im, seg_shp, seg_aff, seg_n_dims, seg_n_channels, seg_h, seg_im_res = get_volume_info(seg_list[i], return_volume=True, aff_ref=None,max_channels=10)
-        assert np.all(img_im == seg_im)
-        print("s")
+
+        # print("processing: " + str(img_list[i].split('/')[-1].split('_')[0]))
+
+        # if not img_list[i].split('/')[-1].split('_')[0] == seg_list[i+diff].split('/')[-1].split('_')[0]:
+        #     print(img_list[i].split('/')[-1].split('_')[0])
+        #     diff+=1
+
+        # img_im, img_shp, img_aff, img_n_dims, img_n_channels, img_h, img_im_res = get_volume_info(img_list[i],return_volume=True,aff_ref=None,max_channels=10)
+        # seg_im, seg_shp, seg_aff, seg_n_dims, seg_n_channels, seg_h, seg_im_res = get_volume_info(seg_list[i], return_volume=True, aff_ref=None,max_channels=10)
+        # assert np.all(img_im == seg_im)
+        # print("s")
 
 
 # sort_files()
 # print_file_info()
 # add_extra_cerebral_as_additional_label()
-divide_bg_using_kmeans()
-center_labels()
+# add_extra_cerebral_as_additional_label_synth()
+# divide_bg_using_kmeans()
+# center_labels()
 # adjust_volumn_to_trainable_by_near()
 # align_vol_to_ras_coords()
-# sort_chuv_files()
 # remove_mri_ex_cereb_by_masking()
-# sort_chuv_files()
+# sort_files()
 # load_results()
 # draw_boxplots_based_onresult_array()
 # invert_mri_intensities()
@@ -833,6 +924,28 @@ center_labels()
 # replace_gt_with_smoothed_label()
 # t_test_on_label()
 # discrete_label_smoothing()
+# force_50perc_with_noclst()
 
 # temp()
+
+# seg_path = "/Users/ziyaoshang/Desktop/fa2023/SP/SP/data/processed_others/zurich_test/img"
+# seg_list = sorted(glob.glob(seg_path + '/*'))
+
+# with open("/Users/ziyaoshang/Desktop/fa2023/SP/SP/data/filenames.txt", 'a') as f:
+#     for i in range(len(seg_list)):
+#         f.write(seg_list[i].split("/")[-1] + '\n')
+
+# input_file = '/Users/ziyaoshang/Desktop/fa2023/SP/SP/data/filenames.txt'  
+# output_file = '/Users/ziyaoshang/Desktop/fa2023/SP/SP/data/testing.txt'  
+
+# with open(input_file, 'r') as infile, open(output_file, 'a') as outfile:
+#     for line in infile:
+#         if line[:6] != "lessbg":
+#             print(line)
+#             modified_line = line
+#         else:
+#             modified_line = line[6:]
+#         outfile.write(modified_line)
+
+
 print("done")

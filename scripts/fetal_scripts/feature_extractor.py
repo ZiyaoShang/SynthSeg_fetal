@@ -14,6 +14,7 @@ from sklearn.mixture import GaussianMixture
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from sklearn.metrics import pairwise_distances_argmin_min
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 
 
@@ -34,6 +35,7 @@ def extract(
     accord_exp=False,
     load = False,
     saved_features_path=None,
+    path_to_save_weights=None,
     fig_dir=None):
     # [total volume, total surface area, surface to volumn, [6] relative volume of each structure, ... [6] relative
     # number of feayures must be 21
@@ -48,8 +50,8 @@ def extract(
         
         if labels_all is None:
             labels_all = get_list_labels(labels_dir=seg_path)
+
         assert inner_labels is not None
-            
 
         all_features = np.zeros(21, dtype=float)
         for i in range(len(seg_list)):
@@ -78,6 +80,19 @@ def extract(
 
             total_volume = float(np.sum(mask_whole))
             verts, faces, _, _ = measure.marching_cubes(mask_whole, method='lewiner') # TODO: is this valid? parameters?
+
+            # fig = plt.figure(figsize=(10, 10))
+            # ax = fig.add_subplot(111, projection='3d')
+            # mesh = Poly3DCollection(verts[faces], alpha=0.70)
+            # face_color = [0.45, 0.45, 0.75]  
+            # mesh.set_facecolor(face_color)
+            # ax.add_collection3d(mesh)
+            # ax.set_xlim(0, mask_whole.shape[0])
+            # ax.set_ylim(0, mask_whole.shape[1])
+            # ax.set_zlim(0, mask_whole.shape[2])
+            # plt.tight_layout()
+            # plt.show()
+
             total_surface_area = float(measure.mesh_surface_area(verts, faces))
             assert (total_surface_area>0) and (total_volume>0)
             surface_to_volumn = total_surface_area / total_volume
@@ -91,6 +106,17 @@ def extract(
             for lb in inner_labels:
                 mask_struct = seg_vol == lb
                 verts, faces, _, _ = measure.marching_cubes(mask_struct, method='lewiner')
+                # fig = plt.figure(figsize=(10, 10))
+                # ax = fig.add_subplot(111, projection='3d')
+                # mesh = Poly3DCollection(verts[faces], alpha=0.70)
+                # face_color = [0.45, 0.45, 0.75]  
+                # mesh.set_facecolor(face_color)
+                # ax.add_collection3d(mesh)
+                # ax.set_xlim(0, mask_whole.shape[0])
+                # ax.set_ylim(0, mask_whole.shape[1])
+                # ax.set_zlim(0, mask_whole.shape[2])
+                # plt.tight_layout()
+                # plt.show()
                 struct_area = float(measure.mesh_surface_area(verts, faces))
                 struct_vol = float(np.sum(mask_struct))
                 struct_areas.append(struct_area)
@@ -102,6 +128,7 @@ def extract(
             struct_surface_to_volumn = np.array(struct_surface_to_volumn)
             struct_vols = struct_vols / np.sum(struct_vols)
             struct_areas = struct_areas / np.sum(struct_areas)
+            assert (np.all(struct_vols<1) and np.all(struct_areas<1)) 
 
             # surface alternative: surface count
             # to be on the surface, a voxel must: 1, have at least one surrounding pixel that is the bg.
@@ -113,17 +140,22 @@ def extract(
 
             vol_feature = np.concatenate((np.array([total_volume]), np.array([total_surface_area]),np.array([surface_to_volumn]), struct_vols, struct_areas, struct_surface_to_volumn))
             all_features = np.vstack([all_features, vol_feature])
-  
+            # print(vol_feature)
+
         raw_features = all_features[1:]
         np.save(saved_features_path,raw_features)
     else:
         raw_features = np.load(saved_features_path)
 
     assert raw_features.shape == (len(glob.glob(seg_path + '/*')), 21)
-
+     # [(s_x/s_total)/(s_y/s_total)] / [(a_x/a_total)/(a_y/a_total)] = (s_x/a_x)/(s_y/a_y), where x and y are two different labels
+    test_assert = raw_features[:,9:14] / raw_features[:,10:15] / raw_features[:,3:8] * raw_features[:,4:9] - raw_features[:,15:20] / raw_features[:,16:]
+    assert np.sum(test_assert) < 1e-12, "feature matrix is incorrectly calculated"
+    # return 
+    # assert False, "testing here, just in case"
 
     # standardize feature sets
-    # print(raw_features.shape)
+    # print(raw_features.shape) must be [n_samples, n_features]
     normalized_data = MinMaxScaler().fit_transform(raw_features)
     assert normalized_data.shape == (len(glob.glob(seg_path + '/*')), 21)
 
@@ -152,6 +184,7 @@ def extract(
     if accord_exp:
         # pass
         # normalized_data[:, :12] *= 2
+        print("normalized_data[:, [0,1,2,3,4,5,9,10,11,15,16,17]] *= 2")
         normalized_data[:, [0,1,2,3,4,5,9,10,11,15,16,17]] *= 2
         # normalized_data[:, [19, 9, 18, 1, 0]] *= 2
         # normalized_data[:, [18, 17, 16, 12, 5]] *= 2
@@ -163,10 +196,11 @@ def extract(
     # print(np.std(normalized_data, axis=0))
 
 
-    # dimentionality reduction with PCA
+    # dimentionality reduction with PCA 
+    assert normalized_data.shape == (len(glob.glob(seg_path + '/*')), 21)
     pca = PCA(n_components=n_components)
-    pca.fit(normalized_data)
-    lowdim_features = pca.transform(normalized_data)
+    pca.fit(normalized_data) # (n_samples, n_features)
+    lowdim_features = pca.transform(normalized_data) # (n_samples, n_features)
     assert lowdim_features.shape == (len(glob.glob(seg_path + '/*')), n_components)
     # print("np.std(lowdim_features, axis=0)")
     # print(np.std(lowdim_features, axis=0))
@@ -178,31 +212,35 @@ def extract(
     # k-means clustering
     if clustering_method=='kmeans':
         kmeans = KMeans(n_clusters=n_clusters, random_state=42, init="k-means++", n_init=10)
-        kmeans.fit(lowdim_features)
+        kmeans.fit(lowdim_features) #(n_samples, n_features)
         clusters = kmeans.labels_
-        assert np.all(clusters == kmeans.fit_predict(lowdim_features))
         centers = kmeans.cluster_centers_
+
+        assert np.all(clusters == kmeans.fit_predict(lowdim_features))
+        assert np.all(np.abs(centers - kmeans.cluster_centers_) < 0.0001)
         assert centers.shape[1] == lowdim_features.shape[1]
+
         closest_inds, _ = pairwise_distances_argmin_min(centers, lowdim_features)
-        print("closest subject index for each cluster centroid (note that these indices start from zero)" +str(closest_inds))
+        print("closest subject index for each cluster centroid (note that these indices start from zero)" + str(closest_inds))
         closest_inds = np.array(closest_inds)
         print(np.array(sorted(glob.glob(seg_path + '/*')))[closest_inds])
-        
-        print("clusters=")
-        print(clusters)
+        # print("clusters=")
+        # print(clusters)
         print("kmeans.inertia_")
         print(kmeans.inertia_)
 
     if clustering_method == 'gmm':
         gmm = GaussianMixture(n_components=n_clusters, random_state=42)
-        gmm.fit(lowdim_features)
-        clusters = gmm.predict(lowdim_features)
+        gmm.fit(lowdim_features) # (n_samples, n_features)
+        clusters = gmm.predict(lowdim_features) # (n_samples, n_features)
         centers = gmm.means_
+
         assert centers.shape[1] == lowdim_features.shape[1]
+
         closest_inds, _ = pairwise_distances_argmin_min(centers, lowdim_features)
         print("closest subject index for each cluster centroid (note that these indices start from zero)" +str(closest_inds))
-        print("clusters=")
-        print(clusters)
+        # print("clusters=")
+        # print(clusters)
 
     if save_plot:
         if gt_classes_2 is not None:
@@ -247,7 +285,7 @@ def extract(
         plt.ylabel('Feature 2')
         plt.title('Scatter Plot of Data Points')
         plt.grid(True)
-        plt.savefig(fig_dir + 'img_10_cluster_acexp_01234591011151617_kmeans.png')
+        plt.savefig(fig_dir + 'img_10_cluster_3_compo_acexp_01234591011151617_gmm.png')
 
        
         # first_three = lowdim_features[:, :3]
@@ -273,9 +311,20 @@ def extract(
     print(counts)
     for ind in range(len(clusters)):
         weights.append(weight_per_cluster / counts[clusters[ind]])
+    
+    # validate weights: 
+    print("validating weights...")
+    for _ in range(500):
+        ass_ind = np.random.randint(0, len(clusters))
+        ass_weight = weights[ass_ind]
+        ass_cluster = clusters[ass_ind]
+        ass_count = np.sum(clusters == ass_cluster)
+        assert ass_weight == (1.0/n_clusters/ass_count), ass_weight - (1.0/n_clusters/ass_count)
 
-    # print(weights)
-    print(np.sum(weights))
+    if path_to_save_weights is not None:
+        print("saving weights to: " + path_to_save_weights)
+        np.save(path_to_save_weights, weights)
+    assert np.sum(weights) > 0.985 and np.sum(weights) < 1.01, np.sum(weights)
 
     return weights 
 
@@ -310,7 +359,21 @@ def classify_feat_importance_3(X, y):
 
 # 1, the absolute brain volumn/surface may not be that useful because we always train on high-res
 
-extract(save_plot=False, seg_path='/Users/ziyaoshang/Desktop/FeTA_synthetic', labels_all=np.array([0,1,2,3,4,5,6,7]), inner_labels=[2,3,4,5,6,7], n_clusters=3, clustering_method='gmm', gt_classes_2=None, gt_classes_3=None, n_components=3, accord_2=False, accord_3=False, accord_23=False, accord_exp=True, load=True, saved_features_path='/Users/ziyaoshang/Desktop/trash/synth/features.npy', fig_dir='/Users/ziyaoshang/Desktop/trash/synth/')
+extract(save_plot=False, seg_path='/Users/ziyaoshang/Desktop/zurich_synth/synth_1v1_extracereb_centered', labels_all=np.array([0,1,2,3,4,5,6,7]), inner_labels=[2,3,4,5,6,7], n_clusters=6, clustering_method='gmm', gt_classes_2=None, gt_classes_3=None, n_components=3, accord_2=False, accord_3=False, accord_23=False, accord_exp=True, load=True, saved_features_path='/Users/ziyaoshang/Desktop/zurich_synth/features_weights/synth1v1_clex1_noinf_origbg/synth1v1_train_features.npy', path_to_save_weights='/Users/ziyaoshang/Desktop/zurich_synth/features_weights/synth1v1_clex1_noinf_origbg/synth1v1_train_weights.npy', fig_dir=None)
 
-# extract(save_plot=False, seg_path='/Users/ziyaoshang/Desktop/fa2023/SP/synthseg_data/zurich/all_extra_label_centered_seg_train', labels_all=np.array([0,1,2,3,4,5,6,7]), inner_labels=[2,3,4,5,6,7], n_clusters=3, clustering_method='kmeans', gt_classes_2=pathology, gt_classes_3=age, n_components=5, accord_2=False, accord_3=False, accord_23=False, accord_exp=True, load=True, saved_features_path='/Users/ziyaoshang/Desktop/trash/tempp/features.npy', fig_dir='/Users/ziyaoshang/Desktop/trash/tempp/')
+# f1 = np.load('/Users/ziyaoshang/Desktop/trash/synth/features.npy')
+# f2 = np.load('/Users/ziyaoshang/Desktop/trash/synth/features_separate.npy')
+# w1 = np.load('/Users/ziyaoshang/Desktop/trash/synth/weights_filt_LRlt6_50pcneuro.npy')
+# w2 = np.load('/Users/ziyaoshang/Desktop/trash/synth/weights_filt_LRlt6_50pcneuro.npy')
+
+# print(np.abs(f1[f1!=f2]-f2[f1!=f2]) / f1[f1!=f2])
+# assert np.all((np.abs(f1[f1!=f2]-f2[f1!=f2]) / f1[f1!=f2]) < 0.001)
+# assert np.all(w1 == w2), np.sum(np.abs(w1 - w2))
+
+# inds = np.array([643, 650, 654, 655])
+# print(np.array(sorted(glob.glob("/Users/ziyaoshang/Desktop/zurich_synth/FeTA_synthetic_excereb_centered" + '/*')))[inds])
+
+# print(w1[-100:])
+
+print('done')
 
