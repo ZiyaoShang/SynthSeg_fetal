@@ -17,19 +17,18 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 
 def extract( 
-    seg_path = "/Users/ziyaoshang/Desktop/fa2023/SP/synthseg_data/zurich/orig/seg",
-    inner_labels = None,
-    n_clusters=3,
-    clustering_method='gmm',
-    n_components=5,
-    save_plot=False,
-    accord_exp=False,
-    load = False,
-    saved_features_path=None,
-    path_to_save_weights=None,
-    fig_dir=None):
-    # [total volume, total surface area, surface to volumn, [6] relative volume of each structure, ... [6] relative
-    # number of feayures must be 21
+    seg_path = None, # path to folder containing label maps 
+    inner_labels = None, # list of all labels to consider 
+    n_clusters=3, # number of groups to divide the dataset  
+    clustering_method='gmm', # clustering method: either "gmm" or "kmeans"
+    n_components=5, # dimensions to reduce to by using PCA
+    save_plot=False, # Whether or not to plot the clusters
+    accord_exp=False, # whether or not to boost the importance of the chosen features
+    load = False,  # whether or not to load the existing raw features from param "saved_features_path"
+    saved_features_path=None, # where the raw features are saved/should be saved
+    path_to_save_weights=None,  # where the final weights are saved 
+    fig_dir=None): # where to save the cluster plots
+
     print("extract()")
     if not load:
         seg_list = sorted(glob.glob(seg_path + '/*'))
@@ -214,21 +213,17 @@ def extract(
     return weights 
 
 
-extract(save_plot=False, seg_path='/Users/ziyaoshang/Desktop/zurich_synth/synth_1v1_extracereb_centered', labels_all=np.array([0,1,2,3,4,5,6,7]), inner_labels=[2,3,4,5,6,7], n_clusters=6, clustering_method='gmm', gt_classes_2=None, gt_classes_3=None, n_components=3, accord_2=False, accord_3=False, accord_23=False, accord_exp=True, load=True, saved_features_path='/Users/ziyaoshang/Desktop/zurich_synth/features_weights/synth1v1_clex1_noinf_origbg/synth1v1_train_features.npy', path_to_save_weights='/Users/ziyaoshang/Desktop/zurich_synth/features_weights/synth1v1_clex1_noinf_origbg/synth1v1_train_weights.npy', fig_dir=None)
 
-# f1 = np.load('/Users/ziyaoshang/Desktop/trash/synth/features.npy')
-# f2 = np.load('/Users/ziyaoshang/Desktop/trash/synth/features_separate.npy')
-# w1 = np.load('/Users/ziyaoshang/Desktop/trash/synth/weights_filt_LRlt6_50pcneuro.npy')
-# w2 = np.load('/Users/ziyaoshang/Desktop/trash/synth/weights_filt_LRlt6_50pcneuro.npy')
+# extract(save_plot=False, seg_path='/Users/ziyaoshang/Desktop/zurich_synth/synth_1v1_extracereb_centered', inner_labels=[2,3,4,5,6,7], n_clusters=6, clustering_method='gmm', n_components=3, accord_exp=True, load=True, saved_features_path='/Users/ziyaoshang/Desktop/zurich_synth/features_weights/synth1v1_clex1_noinf_origbg/synth1v1_train_features.npy', path_to_save_weights='/Users/ziyaoshang/Desktop/zurich_synth/features_weights/synth1v1_clex1_noinf_origbg/synth1v1_train_weights.npy', fig_dir=None)
+
+# f1 = np.load('/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/weights_features/synth1v1+dhcp_sep_clex1/features_synth1v1+dhcp_sep_clex1.npy')
+# f2 = np.load('/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/weights_features/trash/ft.npy')
+# w1 = np.load('/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/weights_features/synth1v1+dhcp_sep_clex1/weights_synth1v1+dhcp_sep_clex1.npy')
+# w2 = np.load('/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/weights_features/trash/wt.npy')
 
 # print(np.abs(f1[f1!=f2]-f2[f1!=f2]) / f1[f1!=f2])
 # assert np.all((np.abs(f1[f1!=f2]-f2[f1!=f2]) / f1[f1!=f2]) < 0.001)
 # assert np.all(w1 == w2), np.sum(np.abs(w1 - w2))
-
-# inds = np.array([643, 650, 654, 655])
-# print(np.array(sorted(glob.glob("/Users/ziyaoshang/Desktop/zurich_synth/FeTA_synthetic_excereb_centered" + '/*')))[inds])
-
-# print(w1[-100:])
 
 print('done')
 

@@ -16,13 +16,13 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 
 def process_feratures( 
-    raw_features=None,
-    n_clusters=3,
-    clustering_method='gmm',
-    n_components=5,
-    save_plot=False,
-    accord_exp=False,
-    fig_dir=None):
+    raw_features=None, # the raw features, shape (Nsegs, 21)
+    n_clusters=3, # number of groups to divide the dhcp dataset  
+    clustering_method='gmm', # clustering method: either "gmm" or "kmeans"
+    n_components=5, # dimensions to reduce to by using PCA
+    save_plot=False, # whether or not to save the plotted clusters 
+    accord_exp=False, # whether or not to boost the importance of the chosen features
+    fig_dir=None): # where to save the cluster plots
 
     # print(raw_features.shape) must be [n_samples, n_features]
     normalized_data = MinMaxScaler().fit_transform(raw_features)
@@ -95,26 +95,20 @@ def process_feratures(
 
 
 def extract_pret( 
-    seg_path = None,
-    inner_labels = None,
-    n_clusters_dhcp=10, 
-    n_clusters_zurich=10,
-    clustering_method='gmm',
-    n_components=5,
-    save_plot=False,
-    gt_classes_2=None,
-    gt_classes_3=None,
-    accord_2=False,
-    accord_3=False,
-    accord_23=False,
-    accord_exp=False,
-    load = False,
-    saved_features_path=None,
-    path_to_save_weights=None,
-    fig_dir=None,
-    first_dhcp_ind=0):
-    # [total volume, total surface area, surface to volumn, [6] relative volume of each structure, ... [6] relative
-    # number of feayures must be 21
+    seg_path = None, # path to folder containing label maps 
+    inner_labels = None, # list of all labels to consider 
+    n_clusters_dhcp=8, # number of groups to divide the dhcp dataset  
+    n_clusters_zurich=6, # number of groups to divide the zurich dataset 
+    clustering_method='gmm', # clustering method: either "gmm" or "kmeans"
+    n_components=3, # dimensions to reduce to by using PCA
+    save_plot=False, # Whether or not to plot the clusters 
+    accord_exp=False, # whether or not to boost the importance of the chosen features
+    load = False, # whether or not to load the existing raw features from param "saved_features_path"
+    saved_features_path=None, # where the raw features are saved/should be saved
+    path_to_save_weights=None, # where the final weights are saved 
+    fig_dir=None, # where to save the cluster plots
+    first_dhcp_ind=0): # the index of the first subject in the dhcp dataset 
+
     print("extract()")
     seg_list_all = np.array(sorted(glob.glob(seg_path + '/*')))
 
@@ -206,11 +200,6 @@ def extract_pret(
         clustering_method=clustering_method,
         n_components=n_components,
         save_plot=save_plot,
-        gt_classes_2=gt_classes_2,
-        gt_classes_3=gt_classes_3,
-        accord_2=accord_2,
-        accord_3=accord_3,
-        accord_23=accord_23,
         accord_exp=accord_exp,
         fig_dir=fig_dir)
     
@@ -221,11 +210,6 @@ def extract_pret(
         clustering_method=clustering_method,
         n_components=n_components,
         save_plot=save_plot,
-        gt_classes_2=gt_classes_2,
-        gt_classes_3= gt_classes_3,
-        accord_2=accord_2,
-        accord_3=accord_3,
-        accord_23=accord_23,
         accord_exp=accord_exp,
         fig_dir=fig_dir)
 
@@ -276,13 +260,7 @@ def extract_pret(
 
     return weights 
 
-extract_pret(save_plot=False, seg_path='/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/synth1v1+dhcp', inner_labels=[2,3,4,5,6,7], n_clusters_dhcp=8, n_clusters_zurich=6, clustering_method='gmm', gt_classes_2=None, gt_classes_3=None, n_components=3, accord_2=False, accord_3=False, accord_23=False, accord_exp=True, load=True, saved_features_path='/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/weights_features/synth1v1+dhcp_sep_clex1/features_synth1v1+dhcp_sep_clex1.npy', fig_dir=None, path_to_save_weights='/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/weights_features/synth1v1+dhcp_sep_clex1/weights_synth1v1+dhcp_sep_clex1.npy', first_dhcp_ind=160)
+# extract_pret(save_plot=False, seg_path='/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/synth1v1+dhcp', inner_labels=[2,3,4,5,6,7], n_clusters_dhcp=8, n_clusters_zurich=6, clustering_method='gmm', n_components=3, accord_exp=True, load=True, saved_features_path='/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/weights_features/synth1v1+dhcp_sep_clex1/features_synth1v1+dhcp_sep_clex1.npy', fig_dir=None, path_to_save_weights='/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/weights_features/synth1v1+dhcp_sep_clex1/weights_synth1v1+dhcp_sep_clex1.npy', first_dhcp_ind=160)
 
-
-# extract_pret(save_plot=False, seg_path='/Users/ziyaoshang/Desktop/fa2023/SP/ziyao_aug2024/zurich+dhcp_train', inner_labels=[2,3,4,5,6,7], n_clusters_dhcp=8, n_clusters_zurich=4, clustering_method='gmm', gt_classes_2=None, gt_classes_3=None, n_components=3, accord_2=False, accord_3=False, accord_23=False, accord_exp=True, load=True, saved_features_path='/Users/ziyaoshang/Desktop/fa2023/SP/temp/features_comp.npy', fig_dir=None, path_to_save_weights='/Users/ziyaoshang/Desktop/fa2023/SP/temp/weights_comp.npy', first_dhcp_ind=80)
-# arr1 = np.load("/Users/ziyaoshang/Desktop/fa2023/SP/temp/weights_zurich+dhcp_train_clst.npy")
-# arr2 = np.load("/Users/ziyaoshang/Desktop/fa2023/SP/temp/weights_comp.npy")
-# print(np.sum(np.abs(arr1 - arr2)))
-
-# print('done')
+print('done')
 
